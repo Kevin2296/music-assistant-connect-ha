@@ -48,6 +48,12 @@ Niet automatisch: cookies uitlezen uit een andere browser/app of extern tabblad.
 
 In 0.3.0 werd een geldig HTTP-formulier met `result: null` onterecht tot `null` teruggebracht. Dit is in 0.4.0 hersteld. Werk de app bij en herstart. Blijft een stap onbeschikbaar, controleer dan MA-versie/tokenrechten en open de eigen MA-providerinstellingen. De automatische tests simuleren MA; ze bewijzen geen geslaagde aanmelding bij echte muziekdiensten of jouw DuckDNS-installatie.
 
+## Appconfiguratie kon niet worden geladen
+
+Werk bij naar **0.4.1** en herstart. In 0.4.0 probeerde de app de beschermde `/data/options.json` als `pwuser` te lezen; Supervisor maakt dit bestand als root met alleen leestoegang voor de eigenaar. Vanaf 0.4.1 leest de opstartroutine de instellingen eerst en schakelt vervolgens naar `pwuser`, zonder extra groepen, voordat de webserver of browser start. De instellingen blijven alleen in procesgeheugen; de bestandstoegangsrechten worden niet verruimd. Na gewijzigde configuratie moet je opnieuw herstarten.
+
+Zie je een andere naam zoals `Phoscon-GW` in het serverveld, dan is dat geen geldig MA-basisadres. Controleer of je browser/wachtwoordmanager automatisch gegevens van een andere app heeft ingevuld. Gebruik het volledige Music Assistant-adres inclusief `http://` en poort, of stel het vooraf in bij Configuratie.
+
 ## Geraadpleegde bronnen
 
 - [HA Ingress](https://contributors.home-assistant.io/apps/guides/ingress/) en [appopties](https://contributors.home-assistant.io/apps/reference/configuration/)

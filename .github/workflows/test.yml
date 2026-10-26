@@ -12,6 +12,8 @@ jobs:
           python-version: '3.12'
       - run: pip install -r music_assistant_connect/requirements.txt pytest pytest-asyncio pyyaml
       - run: python -m pytest -q music_assistant_connect/tests
+      - name: Check root-only Supervisor options and privilege drop on Linux
+        run: sudo "$(which python)" music_assistant_connect/tests/startup_permissions.py
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

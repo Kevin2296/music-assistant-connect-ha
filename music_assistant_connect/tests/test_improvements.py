@@ -71,4 +71,4 @@ async def test_partial_soundcloud_capture_keeps_browser_open():
 
 def test_runtime_preserves_proxy_peer():
     startup=(Path(__file__).parents[1]/'startup.py').read_text()
-    assert '"--no-proxy-headers"' in startup
+    assert 'proxy_headers=False' in startup

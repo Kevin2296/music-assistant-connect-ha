@@ -68,7 +68,7 @@ renderCards();
 async function loadSettings(){
   try {
     const response=await fetch('api/settings',{cache:'no-store'});
-    if(!response.ok)throw Error('Appconfiguratie kon niet worden geladen. Open de app opnieuw via Home Assistant.');
+    if(!response.ok){let failure={};try{failure=await response.json()}catch{}throw Error(typeof failure.detail==='string'?failure.detail:`Appconfiguratie kon niet worden geladen (HTTP ${response.status}). Werk de app bij en herstart; open daarna opnieuw via Home Assistant.`)}
     const settings=await response.json();state.configured=settings.configured;
     $('#ma-url').value=settings.ma_url||'';
     if(state.configured){

@@ -21,12 +21,18 @@ SUPERVISOR_IP = "172.30.32.2"
 browser = ProviderBrowser()
 SITE = Path(__file__).parent / "static"
 OPTIONS_FILE = Path("/data/options.json")
+APP_OPTIONS: dict | None = None
 
 def options() -> dict:
     # Supervisor owns this file. Never send its token back to the browser.
+    if APP_OPTIONS is not None:
+        return APP_OPTIONS
     if not OPTIONS_FILE.exists():
         return {}
-    return json.loads(OPTIONS_FILE.read_text(encoding="utf-8"))
+    try:
+        return json.loads(OPTIONS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise HTTPException(503, "Appconfiguratie niet leesbaar. Werk Music Assistant Connect bij en herstart de app.") from exc
 
 def navigation_url(value: str) -> str:
     """Allow HA root paths or explicit HTTPS UI addresses, never executable URLs."""
