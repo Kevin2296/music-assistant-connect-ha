@@ -5,6 +5,8 @@ from pathlib import Path
 import shutil
 import sys
 import urllib.parse
+import io
+from PIL import Image
 
 import httpx
 
@@ -21,7 +23,7 @@ async def title(env):
 
 async def run():
     os.environ.pop('DISPLAY',None)
-    fixture='''<title>Manual fixture</title><input style="position:absolute;left:20px;top:20px;width:300px;height:40px" oninput="document.title=this.value"><input type="range" min="0" max="100" value="0" style="position:absolute;left:20px;top:120px;width:300px;height:40px" oninput="document.title='range'+this.value">'''
+    fixture='''<title>Manual fixture</title><input style="position:absolute;left:20px;top:20px;width:300px;height:40px;background:red;border:0" oninput="document.title=this.value"><input type="range" min="0" max="100" value="0" style="position:absolute;left:20px;top:120px;width:300px;height:40px" oninput="document.title='range'+this.value">'''
     manual_browser.PROVIDERS['ytmusic']='data:text/html,'+urllib.parse.quote(fixture)
     original_copy=shutil.copytree
     def copy_extension(source,target,*args,**kwargs):
@@ -46,11 +48,20 @@ async def run():
             port=native.server.sockets[0].getsockname()[1]
             assert (await client.get(f'http://127.0.0.1:{port}/wrong')).status_code==403
         await asyncio.sleep(1)
-        await browser.click(60,40)
+        # Browser chrome/infobars may shift the page. Locate the red test input
+        # in the actual desktop image instead of assuming a fixed content offset.
+        image=Image.open(io.BytesIO(await browser.screenshot())).convert('RGB')
+        pixels=image.load()
+        points=[(x,y) for y in range(image.height) for x in range(image.width) if pixels[x,y][0]>200 and pixels[x,y][1]<60 and pixels[x,y][2]<60]
+        assert points, 'Fixture not visible; focused window: '+repr(await title(native.env))
+        left=min(p[0] for p in points);top=min(p[1] for p in points)
+        await browser.click(left+40,top+20)
         await browser.type_text('manual-fixture-input')
-        assert 'manual-fixture-input' in await title(native.env)
-        await browser.drag(30,140,300,140)
-        assert 'range' in await title(native.env)
+        actual=await title(native.env)
+        assert 'manual-fixture-input' in actual,repr(actual)
+        await browser.drag(left+10,top+120,left+280,top+120)
+        actual=await title(native.env)
+        assert 'range' in actual,repr(actual)
         assert (await browser.screenshot()).startswith(b'\xff\xd8')
         result=await browser.extract()
         assert result['found'] is True
