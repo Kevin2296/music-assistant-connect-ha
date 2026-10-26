@@ -203,7 +203,7 @@ class ManualBrowser:
             values=data.get('values',{}) if isinstance(data,dict) else {}
             if not isinstance(values,dict):values={}
             allowed={'ytmusic':{'cookie'},'soundcloud':{'authorization','client_id'},'deezer':{'arl'}}[self.provider]
-            values={k:v for k,v in values.items() if k in allowed and isinstance(v,str) and len(v)<=60000}
+            values={k:v for k,v in values.items() if k in allowed and isinstance(v,str) and 0<len(v)<=60000}
             complete=all(values.get(k) for k in allowed)
             if self.provider=='ytmusic':complete=complete and '__Secure-3PAPISID=' in values.get('cookie','')
             return {'found':complete,'values':values,'message':'Gegevens gevonden.' if complete else 'Nog niet alle gegevens gevonden. Log zelf in, open een eigen afspeellijst en probeer opnieuw. Bij een blokkade kan deze sessie niet automatisch worden gekoppeld.'}

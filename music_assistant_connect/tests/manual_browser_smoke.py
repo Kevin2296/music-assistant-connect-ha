@@ -14,7 +14,7 @@ from browser import ProviderBrowser
 
 
 async def title(env):
-    process=await asyncio.create_subprocess_exec('xdotool','getactivewindow','getwindowname',env=env,stdout=asyncio.subprocess.PIPE)
+    process=await asyncio.create_subprocess_exec('xdotool','getwindowfocus','getwindowname',env=env,stdout=asyncio.subprocess.PIPE)
     stdout,_=await process.communicate()
     return stdout.decode()
 
