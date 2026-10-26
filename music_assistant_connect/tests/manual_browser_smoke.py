@@ -54,11 +54,19 @@ async def run():
         pixels=image.load()
         points=[(x,y) for y in range(image.height) for x in range(image.width) if pixels[x,y][0]>200 and pixels[x,y][1]<60 and pixels[x,y][2]<60]
         assert points, 'Fixture not visible; focused window: '+repr(await title(native.env))
-        left=min(p[0] for p in points);top=min(p[1] for p in points)
+        counts={}
+        for x,y in points:counts[y]=counts.get(y,0)+1
+        rows=[y for y,count in counts.items() if count>200]
+        assert rows, 'Large red fixture input not visible'
+        top=min(rows)
+        left=min(x for x,y in points if y==top+10)
         await browser.click(left+40,top+20)
         await browser.type_text('manual-fixture-input')
-        actual=await title(native.env)
-        assert 'manual-fixture-input' in actual,repr(actual)
+        for _ in range(20):
+            actual=await title(native.env)
+            if 'manual-fixture-input' in actual:break
+            await asyncio.sleep(.1)
+        assert 'manual-fixture-input' in actual,(repr(actual),left,top)
         await browser.drag(left+10,top+120,left+280,top+120)
         actual=await title(native.env)
         assert 'range' in actual,repr(actual)
