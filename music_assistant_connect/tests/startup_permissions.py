@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 import tempfile
 
@@ -10,6 +11,14 @@ assert os.getuid()==0, 'Run this integration check as root on Linux.'
 app_dir=Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory() as folder:
     os.chmod(folder,0o755)
+    # GitHub's runner home is not traversable by nobody. Mirror the image's
+    # world-readable /opt app directory, without changing checkout permissions.
+    runtime=Path(folder)/'runtime'
+    runtime.mkdir(mode=0o755)
+    shutil.copyfile(app_dir/'startup.py',runtime/'startup.py')
+    shutil.copytree(app_dir/'app',runtime/'app')
+    for item in runtime.rglob('*'):
+        item.chmod(0o755 if item.is_dir() else 0o644)
     options=Path(folder)/'options.json'
     options.write_text(json.dumps({'ma_url':'http://192.168.1.5:8095','ma_token':'integration-secret'}))
     os.chmod(options,0o600)
@@ -43,7 +52,7 @@ def serve(app, **kwargs):
 sys.modules['uvicorn']=types.SimpleNamespace(run=serve)
 startup.main()
 '''
-    result=subprocess.run([sys.executable,'-c',script,str(app_dir),str(options)],capture_output=True,text=True)
+    result=subprocess.run([sys.executable,'-c',script,str(runtime),str(options)],capture_output=True,text=True)
     assert result.returncode==0, result.stderr
     assert 'integration-secret' not in result.stdout+result.stderr
     assert options.stat().st_uid==0
