@@ -75,7 +75,7 @@ async def test_ma_setup_command_forwarding(monkeypatch):
             captured['url']=url
             captured['payload']=json
             assert headers['Authorization']=='Bearer abcde12345'
-            return SimpleNamespace(raise_for_status=lambda:None,json=lambda:{'message_id':'xx','result':{'flow_id':'f1','step_id':'user','type':'form','entries':[]}})
+            return SimpleNamespace(status_code=200,raise_for_status=lambda:None,json=lambda:{'message_id':'xx','result':{'flow_id':'f1','step_id':'user','type':'form','entries':[]}})
     original_client = httpx.AsyncClient
     client=original_client(transport=httpx.ASGITransport(app=app, client=SUPERVISOR),base_url='http://test')
     monkeypatch.setattr(main.httpx,'AsyncClient',FakeClient)

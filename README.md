@@ -17,13 +17,16 @@ Koppel Music Assistant-providers direct vanuit de **Home Assistant-app op je tel
 2. Voeg toe: `https://github.com/Kevin2296/music-assistant-connect-ha`
 3. Installeer **Music Assistant Connect** en start hem.
 4. Schakel **Weergeven in zijbalk** in; open **Music Connect** op je telefoon via de Home Assistant Companion-app.
-5. Geef het Music Assistant-adres en een API-token op, kies de provider en volg de wizard.
+5. Vul vooraf bij **Configuratie** `ma_url` en `ma_token` in (intern Music Assistant-adres en MA-token met providerbeheerrechten), sla op en herstart. Het token blijft op de server. Handmatige invoer in de app blijft mogelijk.
+6. Stel optioneel `ma_ui_url` in op je HA Music Assistant-paneelpad of bestaand HTTPS MA-adres voor snelkoppelingen. Kies de provider en volg de wizard.
+
+Ook buiten je wifi: open je bestaande **DuckDNS/HTTPS Home Assistant-toegang** en kies Music Connect in de zijbalk. Het interne MA-adres hoeft niet vanaf je telefoon bereikbaar te zijn. Geen extra portforwarding nodig. Zie de [handleiding](music_assistant_connect/DOCS.md) voor veilige navigatie en de grenzen van automatisch cookies koppelen.
 
 **Vereist:** Home Assistant OS met app-ondersteuning (`amd64`/`aarch64`) en een bereikbare Music Assistant-server. De ingebouwde browser vraagt relatief veel geheugen. Geen ondersteuning op Home Assistant Container.
 
 ## Status
 
-**v0.3.0 – prototype.** Automatische tests zijn uitgevoerd, maar de Docker-build op Home Assistant OS en het daadwerkelijke koppelen van alle providers nog niet. Google kan aanmelding in een ingebouwde browser blokkeren; YouTube Music kan extra PO Token Generator-configuratie nodig hebben. Geen gegarandeerde éénkliklogin.
+**v0.4.0 – prototype.** Het lege providerformulier uit 0.3.0 is hersteld. Automatische tests zijn uitgevoerd, maar de Docker-build op Home Assistant OS en het daadwerkelijke koppelen van alle providers nog niet. Google kan aanmelding in een ingebouwde browser blokkeren; YouTube Music kan extra PO Token Generator-configuratie nodig hebben. Geen gegarandeerde éénkliklogin.
 
 Zie [documentatie](music_assistant_connect/DOCS.md) voor beperkingen, veiligheid en het gebruik. Deel geen credentials of cookies in openbare issues.
 

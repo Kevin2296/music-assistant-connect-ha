@@ -139,7 +139,7 @@ class ProviderBrowser:
             cookies = await self.context.cookies()
             result = {}
             if self.provider == "soundcloud":
-                token = next((c["value"] for c in cookies if c["name"] == "oauth_token" and "soundcloud.com" in c["domain"]), "")
+                token = next((c["value"] for c in cookies if c["name"] == "oauth_token" and c["domain"].lstrip('.') in ("soundcloud.com", "www.soundcloud.com")), "")
                 if token:
                     result["authorization"] = "OAuth " + token.removeprefix("OAuth ")
                 if self.client_id:
@@ -147,7 +147,7 @@ class ProviderBrowser:
                 missing = [x for x in ("client_id", "authorization") if x not in result]
                 message = "SoundCloud-gegevens gevonden." if not missing else "Nog niet gevonden: " + ", ".join(missing) + ". Open een afspeellijst, ververs en probeer opnieuw."
             elif self.provider == "deezer":
-                arl = next((c["value"] for c in cookies if c["name"].lower() == "arl" and "deezer.com" in c["domain"]), "")
+                arl = next((c["value"] for c in cookies if c["name"].lower() == "arl" and c["domain"].lstrip('.') in ("deezer.com", "www.deezer.com")), "")
                 if arl:
                     result["arl"] = arl
                 message = "Deezer ARL gevonden." if arl else "ARL nog niet gevonden. Log eerst in op Deezer."
@@ -157,10 +157,11 @@ class ProviderBrowser:
                 message = "YouTube Music-cookie gevonden." if result else "Geen geldige cookie uit een /browse-aanvraag gevonden. Open een eigen afspeellijst en probeer opnieuw. Google kan deze browser blokkeren."
             else:
                 raise ValueError("Geen export voor deze dienst.")
-            if result:
+            complete = bool(result) and (self.provider != "soundcloud" or not missing)
+            if complete:
                 # Especially important for YT Music: immediately destroy rotating session.
                 await self._close_unlocked()
-            return {"found": bool(result), "values": result, "message": message}
+            return {"found": complete, "values": result, "message": message}
 
     async def close(self):
         async with self._lock:

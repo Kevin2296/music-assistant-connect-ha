@@ -3,5 +3,5 @@ import subprocess
 
 subprocess.run([
     "uvicorn", "main:app", "--app-dir", "/opt/ma-connect/app",
-    "--host", "0.0.0.0", "--port", "8675", "--no-access-log",
+    "--host", "0.0.0.0", "--port", "8675", "--no-access-log", "--no-proxy-headers",
 ], check=True)

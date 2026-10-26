@@ -12,6 +12,13 @@ jobs:
           python-version: '3.12'
       - run: pip install -r music_assistant_connect/requirements.txt pytest pytest-asyncio pyyaml
       - run: python -m pytest -q music_assistant_connect/tests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test music_assistant_connect/tests/helpers.test.cjs
+      - run: node --check music_assistant_connect/app/static/app.js
+      - run: python -m playwright install --with-deps chromium
+      - run: python music_assistant_connect/tests/ui_smoke.py
       - name: Check HA app metadata
         run: |
           python - <<'PY'

@@ -1,5 +1,5 @@
 name: "Music Assistant Connect"
-version: "0.3.0"
+version: "0.4.0"
 slug: "music_assistant_connect"
 description: "Muziekdiensten koppelen vanaf je telefoon in Home Assistant (prototype)"
 url: "https://github.com/Kevin2296/music-assistant-connect-ha"
@@ -15,3 +15,11 @@ ingress_port: 8675
 panel_title: "Music Connect"
 panel_icon: mdi:music-circle
 panel_admin: true
+options:
+  ma_url: ""
+  ma_token: ""
+  ma_ui_url: ""
+schema:
+  ma_url: str?
+  ma_token: password?
+  ma_ui_url: str?
