@@ -1,0 +1,26 @@
+name: Test Home Assistant app
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r music_assistant_connect/requirements.txt pytest pytest-asyncio pyyaml
+      - run: python -m pytest -q music_assistant_connect/tests
+      - name: Check HA app metadata
+        run: |
+          python - <<'PY'
+          import yaml
+          repo=yaml.safe_load(open('repository.yaml'))
+          cfg=yaml.safe_load(open('music_assistant_connect/config.yaml'))
+          assert repo['name']
+          assert cfg['ingress'] is True
+          assert 'ports' not in cfg
+          assert cfg['slug']=='music_assistant_connect'
+          print('Metadata OK')
+          PY
