@@ -24,7 +24,9 @@ class BrowserUnavailable(Exception):
 
 
 class ProviderBrowser:
-    def __init__(self):
+    def __init__(self, use_manual=True):
+        self.use_manual = use_manual
+        self.native = None
         self.driver = None
         self.browser: Browser | None = None
         self.context: BrowserContext | None = None
@@ -47,7 +49,7 @@ class ProviderBrowser:
         try:
             self.display_process = await asyncio.create_subprocess_exec(
                 'Xvfb', '-displayfd', str(write_fd), '-screen', '0',
-                '1280x1024x24', '-nolisten', 'tcp',
+                f'{self.viewport["width"]}x{self.viewport["height"]}x24', '-nolisten', 'tcp',
                 pass_fds=(write_fd,), stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
             )
@@ -96,6 +98,17 @@ class ProviderBrowser:
             await self._close_unlocked()
             try:
                 self.driver = await async_playwright().start()
+                self.viewport = {"width": 980, "height": 720}
+                if self.use_manual:
+                    from manual_browser import ManualBrowser
+                    self.native = ManualBrowser()
+                    result = await self.native.start(provider,self.driver.chromium.executable_path,
+                                                     await self._display_env(),self.viewport)
+                    self.page = self.native
+                    self.provider = provider
+                    self.started = time.monotonic()
+                    self._expiry_task = asyncio.create_task(self._expire_after(900))
+                    return result
                 # Some music sites reject the headless shell as an unsupported browser.
                 # Use full Chromium on a virtual display, without spoofing its identity.
                 self.browser = await self.driver.chromium.launch(
@@ -132,11 +145,13 @@ class ProviderBrowser:
             raise BrowserUnavailable("Deze browsersessie is verlopen. Begin opnieuw.")
 
     async def screenshot(self) -> bytes:
+        if self.native:return await self._native_call('screenshot')
         async with self._lock:
             self.ensure_live()
             return await self.page.screenshot(type="jpeg", quality=67, animations="disabled", timeout=15000)
 
     async def click(self, x: float, y: float):
+        if self.native:return await self._native_call('click',x,y)
         async with self._lock:
             self.ensure_live()
             await self.page.mouse.click(max(0, min(self.viewport["width"]-1, x)), max(0, min(self.viewport["height"]-1, y)))
@@ -144,6 +159,7 @@ class ProviderBrowser:
             return {"ok": True, "url": self.page.url}
 
     async def type_text(self, value: str):
+        if self.native:return await self._native_call('type_text',value)
         async with self._lock:
             self.ensure_live()
             if len(value) > 1024:
@@ -152,6 +168,7 @@ class ProviderBrowser:
             return {"ok": True}
 
     async def scroll(self, delta_y: float, x: float, y: float):
+        if self.native:return await self._native_call('scroll',delta_y,x,y)
         async with self._lock:
             self.ensure_live()
             await self.page.mouse.move(
@@ -164,6 +181,7 @@ class ProviderBrowser:
             return {"ok": True, "url": self.page.url}
 
     async def key(self, value: str):
+        if self.native:return await self._native_call('key',value)
         async with self._lock:
             self.ensure_live()
             if value not in ("Enter", "Tab", "Escape", "Backspace", "ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End"):
@@ -173,6 +191,7 @@ class ProviderBrowser:
             return {"ok": True}
 
     async def reload(self):
+        if self.native:return await self._native_call('reload')
         async with self._lock:
             self.ensure_live()
             try:
@@ -182,6 +201,11 @@ class ProviderBrowser:
             return {"ok": True}
 
     async def extract(self):
+        if self.native:
+            async with self._lock:
+                result=await self._native_call('extract')
+                if result['found']:await self._close_unlocked()
+                return result
         async with self._lock:
             self.ensure_live()
             cookies = await self.context.cookies()
@@ -215,6 +239,23 @@ class ProviderBrowser:
         async with self._lock:
             await self._close_unlocked()
 
+    async def _native_call(self,method,*args):
+        try:
+            self.ensure_live()
+            return await getattr(self.native,method)(*args)
+        except RuntimeError as exc:
+            raise BrowserUnavailable(str(exc)) from exc
+
+    async def drag(self,x,y,end_x,end_y):
+        if self.native:return await self._native_call('drag',x,y,end_x,end_y)
+        async with self._lock:
+            self.ensure_live()
+            await self.page.mouse.move(x,y)
+            await self.page.mouse.down()
+            try:await self.page.mouse.move(end_x,end_y,steps=12)
+            finally:await self.page.mouse.up()
+            return {'ok':True}
+
     async def _expire_after(self, seconds):
         try:
             await asyncio.sleep(seconds)
@@ -228,6 +269,10 @@ class ProviderBrowser:
         if task and task is not asyncio.current_task():
             task.cancel()
         try:
+            if self.native:
+                await self.native.close()
+                self.native = None
+                self.page = None
             if self.context:
                 await self.context.close()
             if self.browser:

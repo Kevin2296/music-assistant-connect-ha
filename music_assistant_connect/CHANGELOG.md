@@ -1,3 +1,12 @@
+# 0.5.0 (experimental)
+
+- Add a human-operated Chromium session without WebDriver/DevTools, embedded through the existing HA screenshot interface. No browser-identity spoofing or automated sign-in.
+- Bundle a session-local cookie extension on the HA server. No phone/desktop extension installation is needed. Export happens only after the authenticated user requests it; the extension can only contact a random, nonce-protected loopback bridge.
+- Limit extension cookie/network permissions to the selected provider. Temporary browser profiles and extension configuration live in RAM (/dev/shm) and are removed on close or expiry.
+- Add manual drag input for sliders and other UI controls. CAPTCHA/2FA remain user actions; challenges are not solved automatically.
+- Show the temporary browser's current address, excluding query parameters in manual mode.
+- Add real Chromium/extension tests using synthetic cookies, and authorization tests for the local bridge. These do not verify Google/SoundCloud sign-in or solve their anti-bot checks.
+
 # 0.4.2
 
 - Replace Chromium's headless shell with full Chromium on a temporary virtual display, using its real browser identity. This addresses browser compatibility; Google may still refuse automated sign-in.

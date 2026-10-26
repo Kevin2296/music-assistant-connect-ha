@@ -26,7 +26,7 @@ Ook buiten je wifi: open je bestaande **DuckDNS/HTTPS Home Assistant-toegang** e
 
 ## Status
 
-**v0.4.1 – prototype.** Het lege providerformulier uit 0.3.0 en het lezen van beschermde HA-appconfiguratie uit 0.4.0 zijn hersteld. Automatische tests zijn uitgevoerd, maar de Docker-build op Home Assistant OS en het daadwerkelijke koppelen van alle providers nog niet. Google kan aanmelding in een ingebouwde browser blokkeren; YouTube Music kan extra PO Token Generator-configuratie nodig hebben. Geen gegarandeerde éénkliklogin.
+**v0.5.0 – experimenteel.** De tijdelijke browser draait nu als een gewone Chromium-sessie met een meegeleverde cookie-extensie op de HA-server. Je bedient hem vanuit HA, inclusief slepen; er is geen extensie op je telefoon nodig. Een test met echte browser/extensie en kunstmatige cookies controleert de overdracht. Dit bewijst geen succesvolle Google/SoundCloud-aanmelding of CAPTCHA-afhandeling. Providers kunnen ook deze browser blokkeren. De Docker-build op jouw HAOS-installatie en echte provideraccounts zijn niet live gevalideerd. YouTube Music vereist nog steeds een passende PO Token Generator.
 
 Zie [documentatie](music_assistant_connect/DOCS.md) voor beperkingen, veiligheid en het gebruik. Deel geen credentials of cookies in openbare issues.
 

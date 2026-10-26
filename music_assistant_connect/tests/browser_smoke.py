@@ -10,7 +10,7 @@ from browser import ProviderBrowser, PROVIDER_URLS
 
 async def run():
     os.environ.pop('DISPLAY',None)
-    b=ProviderBrowser()
+    b=ProviderBrowser(use_manual=False)
     # Stay offline: start the real browser on about:blank, then load a fixture.
     PROVIDER_URLS['ytmusic']='about:blank'
     try:

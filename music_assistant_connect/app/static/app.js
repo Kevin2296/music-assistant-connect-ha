@@ -57,6 +57,7 @@ async function shot(){
     if(!r.ok)throw Error('Browser niet actief of sessie verlopen. Sluit de browser en begin opnieuw.');
     const blob=await r.blob();
     if(!state.activeBrowser||generation!==browserGeneration)return;
+    const address=r.headers.get('X-Browser-URL');if(address)$('#browser-url').textContent=address;
     const obj=URL.createObjectURL(blob);$('#browser-image').src=obj;
     if(screenshotURL)URL.revokeObjectURL(screenshotURL);screenshotURL=obj;$('#browser-overlay').hidden=true;
   }catch(e){if(state.activeBrowser&&generation===browserGeneration){$('#browser-overlay').hidden=false;$('#browser-overlay').textContent=errorMessage(e)}}
@@ -71,7 +72,12 @@ async function extractBrowser(){try{const r=await post('api/browser/extract');if
 function isSafeUrl(url){try{return ['https:','http:'].includes(new URL(url).protocol)}catch{return false}}
 $('#connect-btn').addEventListener('click',connect);$('#toggle-token').addEventListener('click',()=>{const t=$('#ma-token');t.type=t.type==='password'?'text':'password';$('#toggle-token').textContent=t.type==='password'?'Toon token':'Verberg token'});
 $('#close-wizard').addEventListener('click',async()=>{stopPolling();await endBrowser();state.flow=null;state.provider=null;state.captured={};$('#wizard-section').hidden=true;renderCards()});$('#refresh-sources').addEventListener('click',async()=>{try{renderSources(await ma('config/providers'))}catch(e){message($('#connection-message'),errorMessage(e),'error')}});
-$('#browser-image').addEventListener('click',async(e)=>{if(!state.activeBrowser)return;const box=e.currentTarget.getBoundingClientRect();const x=(e.clientX-box.left)/box.width*state.browserViewport.width;const y=(e.clientY-box.top)/box.height*state.browserViewport.height;await browserAction('click',{x,y})});
+let pointerStart=null;
+const browserImage=$('#browser-image');browserImage.draggable=false;browserImage.style.touchAction='none';
+function browserPoint(event){const box=browserImage.getBoundingClientRect();return {x:Math.max(0,Math.min(state.browserViewport.width-1,(event.clientX-box.left)/box.width*state.browserViewport.width)),y:Math.max(0,Math.min(state.browserViewport.height-1,(event.clientY-box.top)/box.height*state.browserViewport.height))}}
+browserImage.addEventListener('pointerdown',event=>{if(!state.activeBrowser||!event.isPrimary)return;event.preventDefault();pointerStart=browserPoint(event);browserImage.setPointerCapture(event.pointerId)});
+browserImage.addEventListener('pointerup',async event=>{if(!pointerStart)return;const start=pointerStart;pointerStart=null;const end=browserPoint(event);if(Math.hypot(end.x-start.x,end.y-start.y)>6)await browserAction('drag',{...start,end_x:end.x,end_y:end.y});else await browserAction('click',start)});
+browserImage.addEventListener('pointercancel',()=>{pointerStart=null});
 $('#browser-reload').addEventListener('click',()=>browserAction('reload'));$('#browser-end').addEventListener('click',endBrowser);
 $('#browser-scroll-up').addEventListener('click',()=>browserAction('scroll',{delta_y:-550,x:state.browserViewport.width/2,y:state.browserViewport.height/2}));
 $('#browser-scroll-down').addEventListener('click',()=>browserAction('scroll',{delta_y:550,x:state.browserViewport.width/2,y:state.browserViewport.height/2}));

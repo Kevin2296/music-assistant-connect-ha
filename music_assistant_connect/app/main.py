@@ -8,7 +8,7 @@ import secrets
 import socket
 from contextlib import asynccontextmanager
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 
 import httpx
 from fastapi import FastAPI, Request, HTTPException, Depends
@@ -185,6 +185,10 @@ class ClickInput(BaseModel):
 class ScrollInput(ClickInput):
     delta_y: float = Field(ge=-1500, le=1500)
 
+class DragInput(ClickInput):
+    end_x: float = Field(ge=0, le=980)
+    end_y: float = Field(ge=0, le=800)
+
 def session_owner(request: Request) -> str:
     if not trusted_ingress(request):
         raise HTTPException(403, "Alleen Home Assistant Ingress is toegestaan.")
@@ -218,7 +222,7 @@ async def browser_screenshot(request: Request, _: None = Depends(auth)):
     assert_browser_owner(request)
     try:
         jpg = await browser.screenshot()
-        return Response(content=jpg, media_type="image/jpeg")
+        return Response(content=jpg, media_type="image/jpeg",headers={"X-Browser-URL":quote(browser.page.url,safe=':/%') if browser.page else ''})
     except BrowserUnavailable as exc:
         raise HTTPException(400, str(exc)) from exc
 
@@ -237,6 +241,14 @@ async def browser_type(body: TextInput, request: Request, _: None = Depends(auth
         return await browser.type_text(body.value)
     except BrowserUnavailable as exc:
         raise HTTPException(400, str(exc)) from exc
+
+@app.post("/api/browser/drag")
+async def browser_drag(body: DragInput, request: Request, _: None = Depends(auth)):
+    assert_browser_owner(request)
+    try:
+        return await browser.drag(body.x,body.y,body.end_x,body.end_y)
+    except BrowserUnavailable as exc:
+        raise HTTPException(400,str(exc)) from exc
 
 @app.post("/api/browser/scroll")
 async def browser_scroll(body: ScrollInput, request: Request, _: None = Depends(auth)):

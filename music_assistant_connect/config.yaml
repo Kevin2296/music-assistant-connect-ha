@@ -1,5 +1,5 @@
 name: "Music Assistant Connect"
-version: "0.4.2"
+version: "0.5.0"
 slug: "music_assistant_connect"
 description: "Muziekdiensten koppelen vanaf je telefoon in Home Assistant (prototype)"
 url: "https://github.com/Kevin2296/music-assistant-connect-ha"

@@ -46,3 +46,18 @@ async def test_scroll_checks_ingress_owner_and_input_limits(monkeypatch):
             response=await client.post('/api/browser/scroll',headers={'X-Remote-User-Id':owner},json=body)
             assert response.status_code==code
     assert calls==[(550,490,360)]
+
+
+@pytest.mark.asyncio
+async def test_drag_is_private_to_owner(monkeypatch):
+    import main
+    monkeypatch.setattr(main.browser,'page',SimpleNamespace())
+    monkeypatch.setattr(main,'browser_session_owner','ha:owner')
+    calls=[]
+    async def drag(*args):calls.append(args);return {'ok':True}
+    monkeypatch.setattr(main.browser,'drag',drag)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app,client=('172.30.32.2',123)),base_url='http://ha.test') as client:
+        body={'x':20,'y':100,'end_x':300,'end_y':100}
+        assert (await client.post('/api/browser/drag',headers={'X-Remote-User-Id':'other'},json=body)).status_code==423
+        assert (await client.post('/api/browser/drag',headers={'X-Remote-User-Id':'owner'},json=body)).status_code==200
+    assert calls==[(20,100,300,100)]

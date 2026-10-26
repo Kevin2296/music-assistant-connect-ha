@@ -60,7 +60,17 @@ Vanaf **0.4.2** zijn er knoppen **Omhoog scrollen**, **Omlaag scrollen** en **Be
 
 Versies tot 0.4.1 gebruikten de vereenvoudigde headless-shellbrowser, die door YouTube Music als niet-ondersteund kan worden gezien. Vanaf 0.4.2 draait volledige Chromium op een tijdelijk virtueel scherm, met de echte browseridentiteit. Je hoeft op het getoonde scherm dus geen Chrome te downloaden. Dit is geen omzeiling van CAPTCHA, 2FA of Googles blokkade van geautomatiseerde aanmeldingen: als Google vervolgens inloggen weigert, is de automatische route niet beschikbaar. De Linux-test controleert echte browserbediening met een lokale cookiedialoog, geen succesvolle Google-aanmelding.
 
-## Geraadpleegde bronnen
+## Gewone browser met ingebouwde cookie-extensie (0.5.0, experimenteel)
+
+Je kunt deze methode volledig vanuit de HA-app bedienen. De extensie draait **in de tijdelijke browser op de HA-server**, niet in de Companion-app of je telefoonbrowser. Er hoeft op je telefoon niets geïnstalleerd te worden.
+
+Klik **Inloggen zonder extensie** om een gewone Chromium-sessie te openen. De knop bedoelt: zonder dat je zelf een extensie hoeft te installeren. Je logt zelf in en bedient zelf eventuele verificaties. Klikken, typen, scrollen en slepen worden doorgegeven aan het tijdelijke bureaublad. Dit gebruikt geen browserautomatiseringsverbinding, aangepaste browseridentiteit of automatische aanmeldscripts. Klik vervolgens **Haal mijn gegevens op** om de meegeleverde cookie-extensie toestemming te geven de relevante gegevens uit die sessie over te nemen. Controleer de velden en bevestig het opslaan in MA.
+
+De extensie heeft alleen toegang tot de gekozen provider en een tijdelijke lokale verbinding binnen de container. Browserprofiel en extensieconfiguratie staan in RAM onder `/dev/shm`; na sluiten/verlopen worden die verwijderd. Het huidige browseradres wordt bijgewerkt zonder queryparameters. De extensie krijgt geen toegang tot de cookies van je telefoon of je andere browsers. SoundCloud Client ID wordt waargenomen in de eigen providerverzoeken; het OAuth-token komt uit de eigen sessiecookie.
+
+**Dit is nog geen bewezen oplossing voor Googles of SoundClouds blokkades.** Google kan ook deze sessie weigeren. SoundCloud kan een CAPTCHA tonen die je zelf moet voltooien en kan de sessie alsnog afwijzen. De app lost geen CAPTCHA/2FA op en gebruikt geen diensten om die te omzeilen. De integratietest gebruikt een echte browser en extensie met een kunstmatige testcookie; er zijn geen echte provideraccounts mee aangemeld.
+
+## Bronnen
 
 - [Playwright: Chromium en de headless shell](https://playwright.dev/docs/browsers)
 - [Playwright: volledige browser op Linux met een virtueel scherm](https://playwright.dev/python/docs/ci#running-headed)

@@ -20,6 +20,8 @@ jobs:
       - run: node --test music_assistant_connect/tests/helpers.test.cjs
       - run: node --check music_assistant_connect/app/static/app.js
       - run: python -m playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y xdotool
+      - run: python music_assistant_connect/tests/manual_browser_smoke.py
       - run: python music_assistant_connect/tests/browser_smoke.py
       - run: python music_assistant_connect/tests/ui_smoke.py
       - name: Check HA app metadata
