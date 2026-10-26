@@ -200,6 +200,13 @@ class ProviderBrowser:
                 pass
             return {"ok": True}
 
+    async def home(self):
+        if self.native:return await self._native_call('home')
+        async with self._lock:
+            self.ensure_live()
+            await self.page.goto(PROVIDER_URLS[self.provider],wait_until='domcontentloaded')
+            return {'ok':True}
+
     async def extract(self):
         if self.native:
             async with self._lock:

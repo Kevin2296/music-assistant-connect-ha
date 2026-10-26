@@ -61,6 +61,10 @@ async def run():
         top=min(rows)
         left=min(x for x,y in points if y==top+10)
         await browser.click(left+40,top+20)
+        # Repeating a click without moving the pointer must not wait for movement.
+        for _ in range(4):
+            await asyncio.wait_for(browser.click(left+40,top+20),2)
+        await asyncio.wait_for(browser.scroll(100,left+40,top+20),2)
         await browser.type_text('manual-fixture-input')
         for _ in range(20):
             actual=await title(native.env)

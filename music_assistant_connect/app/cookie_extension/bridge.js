@@ -24,7 +24,9 @@ async function poll(){
   try{
     const response=await fetch(CONFIG.bridge,{cache:'no-store'});
     if(response.ok){
-      if((await response.json()).capture)await capture();
+      const command=await response.json();
+      if(command.navigate){const [active]=await chrome.tabs.query({active:true,lastFocusedWindow:true});if(active?.id)await chrome.tabs.update(active.id,{url:command.navigate});}
+      if(command.capture)await capture();
       const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true});
       if(tab?.url)await fetch(CONFIG.bridge,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'status',url:tab.url})});
     }

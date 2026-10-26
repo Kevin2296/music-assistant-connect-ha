@@ -65,7 +65,7 @@ async function shot(){
 }
 setInterval(()=>{if(state.activeBrowser&&!document.hidden)shot()},2000);
 async function startBrowser(){if(!state.provider?.cookie)return;$('#browser-area').hidden=false;$('#browser-overlay').hidden=false;$('#browser-overlay').textContent='Browser starten…';try{const result=await post('api/browser/start',{provider:state.provider.id});state.activeBrowser=true;state.browserViewport=result.viewport||{width:980,height:720};$('#browser-image').style.aspectRatio=`${state.browserViewport.width}/${state.browserViewport.height}`;$('#browser-url').textContent=result.page;await shot();$('#browser-area').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){message($('#wizard-status'),errorMessage(e),'error');$('#browser-area').hidden=true}}
-async function browserAction(path,body={}){try{const r=await post('api/browser/'+path,body);if(r.url)$('#browser-url').textContent=r.url;await shot();return r}catch(e){message($('#wizard-status'),errorMessage(e),'error');return null}}
+async function browserAction(path,body={}){try{const r=await post('api/browser/'+path,body);if(r.url)$('#browser-url').textContent=r.url;if(state.lastControlError){message($('#wizard-status'),'');state.lastControlError=false}await shot();return r}catch(e){state.lastControlError=true;message($('#wizard-status'),errorMessage(e),'error');return null}}
 async function endBrowser(){browserGeneration++;state.activeBrowser=false;$('#browser-area').hidden=true;$('#browser-overlay').hidden=false;if(screenshotURL)URL.revokeObjectURL(screenshotURL);screenshotURL='';try{await post('api/browser/close')}catch{}}
 function patchExtracted(values){Object.assign(state.captured,readFields());const all=state.flow?.entries||[];let count=0;for(const [field,value]of Object.entries(values)){const entry=CredentialHelpers.match(all,field);if(entry){state.captured[entry.key]=value;count++}}renderFlow();return count}
 async function extractBrowser(){try{const r=await post('api/browser/extract');if(r.found){await endBrowser();const count=patchExtracted(r.values);message($('#wizard-status'),count?`Gegevens lokaal opgehaald en ingevuld (${count} veld(en)). Controleer de overige velden en kies 'Opslaan en koppelen'.`:'Gegevens gevonden, maar niet automatisch herkend als Music Assistant-velden. Controleer de instellingen van de provider.',count?'success':'error')}else{if(Object.keys(r.values||{}).length)patchExtracted(r.values);message($('#wizard-status'),r.message,'error')}}catch(e){message($('#wizard-status'),errorMessage(e),'error')}}
@@ -82,6 +82,7 @@ $('#browser-reload').addEventListener('click',()=>browserAction('reload'));$('#b
 $('#browser-scroll-up').addEventListener('click',()=>browserAction('scroll',{delta_y:-550,x:state.browserViewport.width/2,y:state.browserViewport.height/2}));
 $('#browser-scroll-down').addEventListener('click',()=>browserAction('scroll',{delta_y:550,x:state.browserViewport.width/2,y:state.browserViewport.height/2}));
 $('#browser-refresh-image').addEventListener('click',shot);
+$('#browser-home').addEventListener('click',()=>browserAction('home'));
 let wheelPending=null,wheelBusy=false;
 $('#browser-image').addEventListener('wheel',e=>{
   if(!state.activeBrowser)return;e.preventDefault();

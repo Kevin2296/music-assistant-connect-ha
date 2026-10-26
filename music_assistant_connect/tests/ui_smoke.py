@@ -32,7 +32,7 @@ with sync_playwright() as p:
         elif path=='api/browser/scroll':
             scrolls.append(route.request.post_data_json)
             route.fulfill(json={'ok':True})
-        elif path in ('api/browser/drag','api/browser/click'):route.fulfill(json={'ok':True})
+        elif path in ('api/browser/drag','api/browser/click','api/browser/home'):route.fulfill(json={'ok':True})
         elif path=='api/browser/screenshot':route.fulfill(body='<svg xmlns="http://www.w3.org/2000/svg" width="980" height="720"><text x="10" y="30">Consent page</text></svg>',content_type='image/svg+xml')
         elif path=='api/browser/close':route.fulfill(json={'ok':True})
         else:
@@ -70,6 +70,8 @@ with sync_playwright() as p:
         page.mouse.move(box['x']+100,box['y']+30,steps=5)
         page.mouse.up()
     assert drag_request.value.post_data_json['end_x']>drag_request.value.post_data_json['x']
+    with page.expect_request('**/api/browser/home'):
+        page.get_by_role('button',name='Terug naar muziekdienst').click()
     page.locator('#browser-end').click()
     assert not errors,errors
     assert page.evaluate('sessionStorage.getItem("ma-token")') is None

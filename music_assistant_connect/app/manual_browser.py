@@ -9,6 +9,7 @@ import asyncio
 import io
 import json
 import math
+import logging
 import os
 from pathlib import Path
 import secrets
@@ -37,6 +38,7 @@ class ManualBrowser:
         self.viewport = {'width':980,'height':720}
         self.provider = ''
         self.current_url = ''
+        self.navigation = None
         self.nonce = secrets.token_urlsafe(32)
         self.pending = None
         self.ready = asyncio.Event()
@@ -94,6 +96,9 @@ class ManualBrowser:
                 if method == 'GET':
                     self.ready.set()
                     result = {'capture':self.pending is not None and not self.pending.done()}
+                    if self.navigation:
+                        result['navigate']=self.navigation
+                        self.navigation=None
                 else:
                     body = await asyncio.wait_for(reader.readexactly(length),5)
                     data = json.loads(body)
@@ -132,9 +137,10 @@ class ManualBrowser:
             stdin=asyncio.subprocess.PIPE if text is not None else asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.DEVNULL,stderr=asyncio.subprocess.DEVNULL)
         try:
-            await asyncio.wait_for(process.communicate(text.encode() if text is not None else None),10)
+            await asyncio.wait_for(process.communicate(text.encode() if text is not None else None),max(10,len(text or '')*.02))
         except asyncio.TimeoutError:
             process.kill();await process.wait()
+            logging.getLogger('uvicorn.error').warning('Browser control timeout: action=%s',args[0])
             raise RuntimeError('De browser reageerde niet op de bediening.') from None
         if process.returncode:
             raise RuntimeError('De browserbediening is mislukt.')
@@ -144,15 +150,15 @@ class ManualBrowser:
 
     async def click(self,x,y):
         async with self.lock:
-            await self._input('mousemove','--sync',*self._point(x,y),'click','1')
+            await self._input('mousemove',*self._point(x,y),'click','1')
         return {'ok':True}
 
     async def drag(self,x,y,end_x,end_y):
         async with self.lock:
-            await self._input('mousemove','--sync',*self._point(x,y),'mousedown','1')
+            await self._input('mousemove',*self._point(x,y),'mousedown','1')
             try:
                 for step in range(1,13):
-                    await self._input('mousemove','--sync',*self._point(x+(end_x-x)*step/12,y+(end_y-y)*step/12))
+                    await self._input('mousemove',*self._point(x+(end_x-x)*step/12,y+(end_y-y)*step/12))
                     await asyncio.sleep(.025)
             finally:
                 await self._input('mouseup','1')
@@ -171,11 +177,16 @@ class ManualBrowser:
 
     async def scroll(self,delta_y,x,y):
         async with self.lock:
-            await self._input('mousemove','--sync',*self._point(x,y),'click','--repeat',str(min(15,max(1,math.ceil(abs(delta_y)/100)))),'--delay','20','5' if delta_y>0 else '4')
+            await self._input('mousemove',*self._point(x,y),'click','--repeat',str(min(15,max(1,math.ceil(abs(delta_y)/100)))),'--delay','20','5' if delta_y>0 else '4')
         return {'ok':True}
 
     async def reload(self):
         async with self.lock:await self._input('key','ctrl+r')
+        return {'ok':True}
+
+    async def home(self):
+        self.ensure_live()
+        self.navigation=PROVIDERS[self.provider]
         return {'ok':True}
 
     def _image(self):

@@ -1,3 +1,9 @@
+# 0.5.1
+
+- Remove synchronous pointer-movement waits from manual browser controls; clicks and wheel events no longer depend on a fresh movement notification. Test repeated clicks at the same coordinates against real Chromium.
+- Add "Terug naar muziekdienst" to return to the selected provider after account security pages, preserving the temporary login session. Navigation destinations are fixed by the app, not supplied by arbitrary clients.
+- Log the app version on startup and log input timeout action types without text, coordinates, URLs or credentials. Allow longer typed text to finish within its own bounded timeout.
+
 # 0.5.0 (experimental)
 
 - Add a human-operated Chromium session without WebDriver/DevTools, embedded through the existing HA screenshot interface. No browser-identity spoofing or automated sign-in.

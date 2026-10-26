@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import ipaddress
 import json
+import logging
 import secrets
 import socket
 from contextlib import asynccontextmanager
@@ -18,6 +19,7 @@ from pydantic import BaseModel, Field
 from browser import ProviderBrowser, BrowserUnavailable
 
 SUPERVISOR_IP = "172.30.32.2"
+VERSION = "0.5.1"
 browser = ProviderBrowser()
 SITE = Path(__file__).parent / "static"
 OPTIONS_FILE = Path("/data/options.json")
@@ -47,6 +49,7 @@ def navigation_url(value: str) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logging.getLogger('uvicorn.error').info('Music Assistant Connect %s; manual browser and RAM cookie bridge enabled',VERSION)
     yield
     await browser.close()
 
@@ -98,7 +101,7 @@ async def helpers(_: None = Depends(auth)):
 
 @app.get("/health")
 async def health(_: None = Depends(auth)):
-    return {"ok": True, "app": "Music Assistant Connect", "ingress_only": True}
+    return {"ok": True, "app": "Music Assistant Connect", "version": VERSION, "ingress_only": True}
 
 class MARequest(BaseModel):
     url: str = Field(default="", max_length=512)
@@ -281,6 +284,14 @@ async def browser_extract(request: Request, _: None = Depends(auth)):
         return await browser.extract()
     except BrowserUnavailable as exc:
         raise HTTPException(400, str(exc)) from exc
+
+@app.post("/api/browser/home")
+async def browser_home(request: Request, _: None = Depends(auth)):
+    assert_browser_owner(request)
+    try:
+        return await browser.home()
+    except BrowserUnavailable as exc:
+        raise HTTPException(400,str(exc)) from exc
 
 @app.post("/api/browser/close")
 async def browser_close(request: Request, _: None = Depends(auth)):
