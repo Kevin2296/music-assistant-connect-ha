@@ -1,0 +1,39 @@
+# Music Assistant Connect
+
+> **Experimenteel communityproject** — Home Assistant-app met een telefoonvriendelijke interface om muziekdiensten aan Music Assistant te koppelen. Niet officieel van Music Assistant, Google, SoundCloud of Deezer.
+
+## Waarom?
+
+Koppel Music Assistant-providers direct vanuit de **Home Assistant-app op je telefoon**. Geen aparte PWA, browserextensie, TrueNAS-installatie of open webpoort nodig: de interface draait via [Home Assistant Ingress](https://developers.home-assistant.io/docs/apps/presentation/#ingress).
+
+- Ondersteunt Music Assistant-koppelstappen voor meerdere providers (o.a. Spotify, Tidal, Qobuz en Apple Music; afhankelijk van je MA-versie).
+- Experimentele tijdelijke browser voor het verzamelen van SoundCloud-, Deezer- en YouTube Music-gegevens, zonder extensie op de telefoon.
+- Ingress-login van Home Assistant, geen aparte appaccounts.
+- Tijdelijke browsersessies worden na 15 minuten gesloten. Geen bewuste permanente opslag van streamcookies.
+
+## Installeren
+
+1. Open Home Assistant → **Instellingen → Apps → App store → ⋮ → Repositories**.
+2. Voeg toe: `https://github.com/Kevin2296/music-assistant-connect-ha`
+3. Installeer **Music Assistant Connect** en start hem.
+4. Schakel **Weergeven in zijbalk** in; open **Music Connect** op je telefoon via de Home Assistant Companion-app.
+5. Geef het Music Assistant-adres en een API-token op, kies de provider en volg de wizard.
+
+**Vereist:** Home Assistant OS met app-ondersteuning (`amd64`/`aarch64`) en een bereikbare Music Assistant-server. De ingebouwde browser vraagt relatief veel geheugen. Geen ondersteuning op Home Assistant Container.
+
+## Status
+
+**v0.3.0 – prototype.** Automatische tests zijn uitgevoerd, maar de Docker-build op Home Assistant OS en het daadwerkelijke koppelen van alle providers nog niet. Google kan aanmelding in een ingebouwde browser blokkeren; YouTube Music kan extra PO Token Generator-configuratie nodig hebben. Geen gegarandeerde éénkliklogin.
+
+Zie [documentatie](music_assistant_connect/DOCS.md) voor beperkingen, veiligheid en het gebruik. Deel geen credentials of cookies in openbare issues.
+
+## Testen
+
+```sh
+python -m pip install -r music_assistant_connect/requirements.txt pytest pytest-asyncio pyyaml
+python -m pytest -q music_assistant_connect/tests
+```
+
+## Licentie
+
+MIT – zie [LICENSE](LICENSE).
