@@ -11,6 +11,7 @@ with sync_playwright() as p:
         browser=p.chromium.launch(channel='msedge',headless=True)
     page=browser.new_page(viewport={'width':390,'height':844})
     errors=[]
+    scrolls=[]
     page.on('pageerror',lambda error:errors.append(str(error)))
     prefix='/api/hassio_ingress/test-session/'
     def serve(route):
@@ -27,6 +28,11 @@ with sync_playwright() as p:
             elif body['command']=='config/providers/setup':
                 route.fulfill(json={'data':{'type':'form','flow_id':'test-flow','result':None,'entries':[{'key':'username','type':'string'},{'key':'cookie','type':'secure_string'}],'last_step':True}})
             else: raise AssertionError(body)
+        elif path=='api/browser/start':route.fulfill(json={'ready':True,'page':'https://consent.youtube.com/','viewport':{'width':980,'height':720}})
+        elif path=='api/browser/scroll':
+            scrolls.append(route.request.post_data_json)
+            route.fulfill(json={'ok':True})
+        elif path=='api/browser/screenshot':route.fulfill(body='<svg xmlns="http://www.w3.org/2000/svg" width="980" height="720"><text x="10" y="30">Consent page</text></svg>',content_type='image/svg+xml')
         elif path=='api/browser/close':route.fulfill(json={'ok':True})
         else:
             file=site/(path or 'index.html')
@@ -44,6 +50,19 @@ with sync_playwright() as p:
     assert page.locator('input[data-key="username"]').input_value()=='example-user'
     assert page.locator('input[data-key="cookie"]').input_value()=='test-cookie'
     page.get_by_role('button',name='Plak uit klembord').wait_for()
+    page.get_by_role('button',name='Gegevens opnieuw ophalen').click()
+    with page.expect_request('**/api/browser/scroll') as scroll_request:
+        page.get_by_role('button',name='Omlaag scrollen',exact=False).click()
+    assert scroll_request.value.post_data_json=={'delta_y':550,'x':490,'y':360}
+    with page.expect_request('**/api/browser/screenshot'):
+        page.get_by_role('button',name='Beeld verversen').click()
+    with page.expect_request('**/api/browser/screenshot',timeout=5000):
+        pass  # Periodic image updates continue without clicking another control.
+    page.locator('#browser-image').hover()
+    with page.expect_request('**/api/browser/scroll') as wheel_request:
+        page.mouse.wheel(0,200)
+    assert wheel_request.value.post_data_json['delta_y']==200
+    page.locator('#browser-end').click()
     assert not errors,errors
     assert page.evaluate('sessionStorage.getItem("ma-token")') is None
     browser.close()

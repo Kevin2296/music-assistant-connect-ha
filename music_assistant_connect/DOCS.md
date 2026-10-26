@@ -54,7 +54,16 @@ Werk bij naar **0.4.1** en herstart. In 0.4.0 probeerde de app de beschermde `/d
 
 Zie je een andere naam zoals `Phoscon-GW` in het serverveld, dan is dat geen geldig MA-basisadres. Controleer of je browser/wachtwoordmanager automatisch gegevens van een andere app heeft ingevuld. Gebruik het volledige Music Assistant-adres inclusief `http://` en poort, of stel het vooraf in bij Configuratie.
 
+## Tijdelijke browser: cookieknoppen en browserondersteuning
+
+Vanaf **0.4.2** zijn er knoppen **Omhoog scrollen**, **Omlaag scrollen** en **Beeld verversen**. Je kunt ook het muiswiel binnen het browserbeeld gebruiken. Scroll naar de cookieknoppen en maak zelf een keuze; de app accepteert geen cookies namens je. Het beeld wordt iedere twee seconden vernieuwd zolang de app zichtbaar is en de browser actief is.
+
+Versies tot 0.4.1 gebruikten de vereenvoudigde headless-shellbrowser, die door YouTube Music als niet-ondersteund kan worden gezien. Vanaf 0.4.2 draait volledige Chromium op een tijdelijk virtueel scherm, met de echte browseridentiteit. Je hoeft op het getoonde scherm dus geen Chrome te downloaden. Dit is geen omzeiling van CAPTCHA, 2FA of Googles blokkade van geautomatiseerde aanmeldingen: als Google vervolgens inloggen weigert, is de automatische route niet beschikbaar. De Linux-test controleert echte browserbediening met een lokale cookiedialoog, geen succesvolle Google-aanmelding.
+
 ## Geraadpleegde bronnen
+
+- [Playwright: Chromium en de headless shell](https://playwright.dev/docs/browsers)
+- [Playwright: volledige browser op Linux met een virtueel scherm](https://playwright.dev/python/docs/ci#running-headed)
 
 - [HA Ingress](https://contributors.home-assistant.io/apps/guides/ingress/) en [appopties](https://contributors.home-assistant.io/apps/reference/configuration/)
 - [MA HTTP API](https://www.music-assistant.io/api/) en [providerflows](https://developers.music-assistant.io/setup-flows/)

@@ -6,6 +6,7 @@ Playwright sessions are held in memory and destroyed after use.
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 import time
 from urllib.parse import parse_qs, urlparse
@@ -35,6 +36,36 @@ class ProviderBrowser:
         self._lock = asyncio.Lock()
         self.viewport = {"width": 980, "height": 720}
         self._expiry_task = None
+        self.display_process = None
+
+    async def _display_env(self):
+        """Give real Chromium an isolated virtual display, with no TCP listener."""
+        env = dict(os.environ)
+        if env.get('DISPLAY'):
+            return env
+        read_fd, write_fd = os.pipe()
+        try:
+            self.display_process = await asyncio.create_subprocess_exec(
+                'Xvfb', '-displayfd', str(write_fd), '-screen', '0',
+                '1280x1024x24', '-nolisten', 'tcp',
+                pass_fds=(write_fd,), stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+        except BaseException:
+            os.close(read_fd)
+            raise
+        finally:
+            os.close(write_fd)
+        try:
+            number = (await asyncio.wait_for(
+                asyncio.to_thread(os.read, read_fd, 32), timeout=10,
+            )).decode().strip()
+            if not number.isdecimal():
+                raise BrowserUnavailable('Het tijdelijke browserscherm kon niet starten.')
+            env['DISPLAY'] = ':' + number
+            return env
+        finally:
+            os.close(read_fd)
 
     def _record_request(self, request):
         if self.provider == "soundcloud":
@@ -65,7 +96,12 @@ class ProviderBrowser:
             await self._close_unlocked()
             try:
                 self.driver = await async_playwright().start()
-                self.browser = await self.driver.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+                # Some music sites reject the headless shell as an unsupported browser.
+                # Use full Chromium on a virtual display, without spoofing its identity.
+                self.browser = await self.driver.chromium.launch(
+                    headless=False, env=await self._display_env(),
+                    args=["--no-sandbox", "--disable-dev-shm-usage"],
+                )
                 self.viewport = {"width": 980, "height": 720} if provider == "ytmusic" else {"width": 440, "height": 760}
                 self.context = await self.browser.new_context(
                     viewport=self.viewport,
@@ -115,10 +151,22 @@ class ProviderBrowser:
             await self.page.keyboard.insert_text(value)
             return {"ok": True}
 
+    async def scroll(self, delta_y: float, x: float, y: float):
+        async with self._lock:
+            self.ensure_live()
+            await self.page.mouse.move(
+                max(0, min(self.viewport['width']-1, x)),
+                max(0, min(self.viewport['height']-1, y)),
+            )
+            # Wheel input also reaches scrollable consent dialogs under the pointer.
+            await self.page.mouse.wheel(0, max(-1500, min(1500, delta_y)))
+            await self.page.wait_for_timeout(250)
+            return {"ok": True, "url": self.page.url}
+
     async def key(self, value: str):
         async with self._lock:
             self.ensure_live()
-            if value not in ("Enter", "Tab", "Escape", "Backspace", "ArrowDown", "ArrowUp"):
+            if value not in ("Enter", "Tab", "Escape", "Backspace", "ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End"):
                 raise ValueError("Onbekende toets.")
             await self.page.keyboard.press(value)
             await self.page.wait_for_timeout(250)
@@ -187,6 +235,16 @@ class ProviderBrowser:
             if self.driver:
                 await self.driver.stop()
         finally:
+            if self.display_process:
+                process = self.display_process
+                self.display_process = None
+                if process.returncode is None:
+                    process.terminate()
+                    try:
+                        await asyncio.wait_for(process.wait(), timeout=5)
+                    except asyncio.TimeoutError:
+                        process.kill()
+                        await process.wait()
             self.context = None
             self.browser = None
             self.driver = None

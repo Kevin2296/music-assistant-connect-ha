@@ -1,3 +1,11 @@
+# 0.4.2
+
+- Replace Chromium's headless shell with full Chromium on a temporary virtual display, using its real browser identity. This addresses browser compatibility; Google may still refuse automated sign-in.
+- Add scroll buttons and mouse-wheel control for long pages and nested cookie-consent dialogs. Cookie choices remain with the user.
+- Refresh the browser image automatically while visible; ignore stale image responses after closing a session.
+- Treat PO token server URL fields as URLs rather than passwords.
+- Add Linux tests using the actual production browser/display, plus scroll authorization and mobile UI checks. No Google account login is claimed by these tests.
+
 # 0.4.1
 
 - Read Home Assistant's root-owned mode-0600 options file during startup, then drop all supplementary groups and switch to pwuser before starting HTTP or Chromium. Keep credentials only in memory; do not weaken Supervisor file permissions.

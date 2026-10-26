@@ -182,6 +182,9 @@ class ClickInput(BaseModel):
     x: float = Field(ge=0, le=980)
     y: float = Field(ge=0, le=800)
 
+class ScrollInput(ClickInput):
+    delta_y: float = Field(ge=-1500, le=1500)
+
 def session_owner(request: Request) -> str:
     if not trusted_ingress(request):
         raise HTTPException(403, "Alleen Home Assistant Ingress is toegestaan.")
@@ -232,6 +235,14 @@ async def browser_type(body: TextInput, request: Request, _: None = Depends(auth
     assert_browser_owner(request)
     try:
         return await browser.type_text(body.value)
+    except BrowserUnavailable as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+@app.post("/api/browser/scroll")
+async def browser_scroll(body: ScrollInput, request: Request, _: None = Depends(auth)):
+    assert_browser_owner(request)
+    try:
+        return await browser.scroll(body.delta_y, body.x, body.y)
     except BrowserUnavailable as exc:
         raise HTTPException(400, str(exc)) from exc
 
