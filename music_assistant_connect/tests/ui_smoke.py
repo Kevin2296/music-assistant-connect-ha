@@ -28,6 +28,7 @@ with sync_playwright() as p:
             elif body['command']=='config/providers/setup':
                 route.fulfill(json={'data':{'type':'form','flow_id':'test-flow','result':None,'entries':[{'key':'username','type':'string'},{'key':'cookie','type':'secure_string'}],'last_step':True}})
             else: raise AssertionError(body)
+        elif path=='api/ytmusic/status':route.fulfill(json={'known':True,'installed':False,'state':'','reachable':False,'app_path':'/hassio/addon/d5369777_ytm_po_token_generator/info','server_url':'http://127.0.0.1:4416'})
         elif path=='api/browser/start':route.fulfill(json={'ready':True,'page':'https://consent.youtube.com/','viewport':{'width':980,'height':720}})
         elif path=='api/browser/scroll':
             scrolls.append(route.request.post_data_json)
@@ -46,6 +47,9 @@ with sync_playwright() as p:
     assert page.get_by_role('link',name='Open Music Assistant').get_attribute('href')=='https://ha.test/hassio/ingress/ma-test'
     page.get_by_role('button',name='YouTube Music').click()
     page.locator('input[data-key="cookie"]').wait_for()
+    page.get_by_text('YT Music PO Token Generator nodig',exact=False).wait_for()
+    assert page.get_by_role('link',name='Open PO Token Generator').get_attribute('href')=='/hassio/addon/d5369777_ytm_po_token_generator/info'
+    assert page.get_by_role('button',name='Inloggen bij YouTube Music').count()==1
     page.locator('input[data-key="username"]').fill('example-user')
     page.evaluate("patchExtracted({cookie:'test-cookie'})")
     assert page.locator('input[data-key="username"]').input_value()=='example-user'

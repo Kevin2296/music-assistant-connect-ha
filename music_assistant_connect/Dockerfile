@@ -1,6 +1,6 @@
 # Multi-architecture Chromium image. The first build is large; Chromium runs only on demand.
 FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
-ARG BUILD_VERSION=0.5.1
+ARG BUILD_VERSION=0.6.0
 ARG BUILD_ARCH=amd64
 LABEL io.hass.version="${BUILD_VERSION}" \
       io.hass.type="app" \

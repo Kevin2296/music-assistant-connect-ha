@@ -25,6 +25,13 @@ def drop_privileges(user='pwuser'):
         raise RuntimeError('Refusing to serve as root')
 
 
+def take_supervisor_token(environ=os.environ):
+    """Move the Supervisor API token from the environment into memory."""
+    token = environ.pop('SUPERVISOR_TOKEN', '')
+    legacy = environ.pop('HASSIO_TOKEN', '')
+    return token or legacy
+
+
 def main():
     try:
         config = load_options()
@@ -33,10 +40,14 @@ def main():
         raise SystemExit('Appconfiguratie kon niet veilig worden geladen. Controleer de installatie en herstart de app.') from None
     # Keep the token only in Python memory, never in argv, environment, or a copy
     # on disk. Chromium and the HTTP server both run with the reduced identity.
+    # The Supervisor token stays out of the environment Chromium and Xvfb inherit.
+    supervisor_token = take_supervisor_token()
     sys.path.insert(0, str(Path(__file__).parent / 'app'))
     import main as application
+    import supervisor
     import uvicorn
     application.APP_OPTIONS = config
+    supervisor.TOKEN = supervisor_token
     uvicorn.run(application.app, host='0.0.0.0', port=8675,
                 access_log=False, proxy_headers=False)
 

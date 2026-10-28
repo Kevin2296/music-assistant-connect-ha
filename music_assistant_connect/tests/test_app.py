@@ -20,7 +20,7 @@ async def test_http_basics():
         assert (await c.get('/')).status_code==200
         page=(await c.get('/',)).text
         assert 'Music Connect' in page
-        assert 'Inloggen zonder extensie' in (await c.get('/app.js',)).text
+        assert "'Inloggen bij '" in (await c.get('/app.js',)).text
 
 @pytest.mark.asyncio
 async def test_local_only_rules():

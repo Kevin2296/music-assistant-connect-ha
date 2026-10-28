@@ -7,8 +7,26 @@ Dit is een **experimentele, niet-officiële Home Assistant-app**, niet verbonden
 1. Voeg de app-repository `https://github.com/Kevin2296/music-assistant-connect-ha` toe bij **Home Assistant → Instellingen → Apps → App store → ⋮ → Repositories**.
 2. Installeer **Music Assistant Connect**, start de app en schakel **Weergeven in zijbalk** in.
 3. Open **Music Connect** via de Home Assistant Companion-app op je telefoon. Geen aparte PWA, extensie of TrueNAS vereist.
-4. Open eerst **Instellingen → Apps → Music Assistant Connect → Configuratie**. Vul `ma_url` (intern adres, bijvoorbeeld `http://192.168.1.50:8095`) en `ma_token` (Music Assistant-token via **Instellingen → Profiel**, met rechten voor providerbeheer) in. Opslaan en herstarten. Dit is geen Home Assistant-token. Zonder deze opties kun je nog handmatig verbinden; de pagina bewaart die invoer niet in browseropslag.
+4. Tik bij stap 1 op **Koppel met Music Assistant** (zie hieronder). Draait MA niet als app op deze HA, open dan **Handmatig verbinden** of vul bij **Configuratie** `ma_url` (bijvoorbeeld `http://192.168.1.50:8095`) en `ma_token` (MA-token via **Instellingen → Profiel**) in. Dit is geen Home Assistant-token. Handmatige invoer bewaart de pagina niet in browseropslag.
 5. Selecteer de dienst; volg de Music Assistant-koppelstappen. Voor YouTube Music, SoundCloud en Deezer is optioneel een tijdelijke browser voor cookie-/tokenhulp beschikbaar.
+
+## Koppel met Music Assistant (0.6.0)
+
+- **Adres automatisch.** Standaard gebruikt de app `http://172.30.32.1:8095`: de Music Assistant-app draait op het hostnetwerk en is vanuit deze app via dat interne adres bereikbaar. Met `hassio_api` vraagt de app Supervisor alleen de openbare app-informatie van `d5369777_music_assistant` (of beta/nightly) op, zodat ook de snelkoppeling `ma_ui_url` automatisch klopt. Een zelf ingevuld `ma_url` of `ma_ui_url` gaat altijd voor.
+- **Token in één tik.** De pagina stuurt via de bestaande Home Assistant-ingress van MA (zelfde HA-adres, jouw HA-login) één verzoek `auth/token/create` met de naam *Music Assistant Connect*. Dat is hetzelfde wat je in MA onder **Instellingen → Profiel** met de hand doet. De app controleert het token bij MA en bewaart het via Supervisor in de eigen appconfiguratie; het komt daarna nooit meer terug naar de pagina en wordt niet gelogd. Intrekken kan in MA onder **Instellingen → Profiel**.
+- **Waarom niet volledig automatisch?** MA vertrouwt aanmeldingen via ingress alleen als ze rechtstreeks van Supervisor komen, en het token dat MA aan de HA-integratie geeft is alleen voor HA Core leesbaar. Een andere app kan dus legitiem geen MA-token voor je ophalen. Daarom één tik, met jou als bevestiging.
+- Werkt het niet (bijvoorbeeld MA nog nooit geopend, of een oudere MA-versie zonder gebruikersbeheer), dan opent **Handmatig verbinden** met uitleg.
+- Het Supervisor-token van deze app wordt bij het opstarten uit de omgevingsvariabelen gehaald, zodat de tijdelijke browser het niet erft.
+
+## YouTube Music zo eenvoudig mogelijk
+
+MA's YouTube Music-provider ondersteunt alleen een aanmeldcookie, geen OAuth of koppelcode. Daarnaast is de app **YT Music PO Token Generator** (`d5369777_ytm_po_token_generator`, uit dezelfde repository als Music Assistant) nodig. De wizard controleert of die app geïnstalleerd is en op poort 4416 antwoordt. Zo niet, dan opent **Open PO Token Generator** direct de juiste app-pagina; tik daar op **Installeren** en **Starten** en kom terug. Het veld `po_token_server_url` blijft `http://127.0.0.1:4416` (MA en de generator delen het hostnetwerk). Een leeg gebruikersnaamveld wordt met je HA-naam gevuld; dat veld telt alleen bij een merkaccount (21 cijfers).
+
+Daarna: **Inloggen bij YouTube Music**, zelf inloggen in de tijdelijke browser, **Haal mijn gegevens op**, **Opslaan en koppelen**. Als Google het inloggen weigert ("deze browser of app is mogelijk niet veilig"), toont de app dat meteen. Dat is een beveiliging van Google die deze app bewust niet omzeilt. Alternatieven: later opnieuw proberen, eenmalig de MA-handleiding op een computer volgen, of een dienst met officiële koppeling kiezen (Spotify, Tidal).
+
+## SoundCloud
+
+Ontbreekt na ophalen nog iets, dan zegt de app precies wat: het OAuth-token (nog niet ingelogd) of de Client ID (speel een nummer af of zoek iets). Na een volledige vondst springt het scherm naar **Opslaan en koppelen**.
 
 ## Privacy en veiligheidsgrenzen
 
@@ -42,7 +60,7 @@ Heb je al een apart beveiligd HTTPS-adres voor MA, dan mag dat als `ma_ui_url`, 
 - SoundCloud vereist zowel Client ID als Authorization. Bij een gedeeltelijke vondst blijft de browser open. Een geplakt OAuth-token krijgt indien nodig `OAuth ` als voorvoegsel.
 - Knoppen **Plak uit klembord** lezen alleen na een klik en browsertoestemming. Als HTTPS, iframebeleid of de Companion-app dit blokkeert: houd het veld ingedrukt en plak handmatig.
 
-Niet automatisch: cookies uitlezen uit een andere browser/app of extern tabblad. Same-origin-beveiliging en HttpOnly-cookies staan dit niet toe. Een gewone inloglink naar YouTube/SoundCloud geeft deze app dus geen toegang tot die sessie. Er is geen bypass voor Google-blokkades, CAPTCHA of 2FA. Gebruik bij blokkade de providerhandleiding en handmatige invoer; op een telefoon kan daarvoor alsnog een computer nodig zijn. Cookies kunnen verlopen. YouTube Music vereist Premium en een passende PO Token Generator; die wordt niet door deze app geïnstalleerd. OAuth-callbacks zijn eigendom van MA en moeten bereikbaar zijn zoals MA/provider dit vereist; deze app herschrijft geen redirectadressen.
+Niet automatisch: cookies uitlezen uit een andere browser/app of extern tabblad. Same-origin-beveiliging en HttpOnly-cookies staan dit niet toe. Een gewone inloglink naar YouTube/SoundCloud geeft deze app dus geen toegang tot die sessie. Er is geen bypass voor Google-blokkades, CAPTCHA of 2FA. Gebruik bij blokkade de providerhandleiding en handmatige invoer; op een telefoon kan daarvoor alsnog een computer nodig zijn. Cookies kunnen verlopen. YouTube Music vereist Premium en de YT Music PO Token Generator; deze app controleert die en verwijst ernaar, maar installeert of start hem niet zelf (daarvoor zijn ruimere Supervisor-rechten nodig). OAuth-callbacks zijn eigendom van MA en moeten bereikbaar zijn zoals MA/provider dit vereist; deze app herschrijft geen redirectadressen.
 
 ## Leeg koppelscherm
 
@@ -64,7 +82,7 @@ Versies tot 0.4.1 gebruikten de vereenvoudigde headless-shellbrowser, die door Y
 
 Je kunt deze methode volledig vanuit de HA-app bedienen. De extensie draait **in de tijdelijke browser op de HA-server**, niet in de Companion-app of je telefoonbrowser. Er hoeft op je telefoon niets geïnstalleerd te worden.
 
-Klik **Inloggen zonder extensie** om een gewone Chromium-sessie te openen. De knop bedoelt: zonder dat je zelf een extensie hoeft te installeren. Je logt zelf in en bedient zelf eventuele verificaties. Klikken, typen, scrollen en slepen worden doorgegeven aan het tijdelijke bureaublad. Dit gebruikt geen browserautomatiseringsverbinding, aangepaste browseridentiteit of automatische aanmeldscripts. Klik vervolgens **Haal mijn gegevens op** om de meegeleverde cookie-extensie toestemming te geven de relevante gegevens uit die sessie over te nemen. Controleer de velden en bevestig het opslaan in MA.
+Klik **Inloggen bij …** (vóór 0.6.0: *Inloggen zonder extensie*) om een gewone Chromium-sessie te openen. Je hoeft zelf geen extensie te installeren. Je logt zelf in en bedient zelf eventuele verificaties. Klikken, typen, scrollen en slepen worden doorgegeven aan het tijdelijke bureaublad. Dit gebruikt geen browserautomatiseringsverbinding, aangepaste browseridentiteit of automatische aanmeldscripts. Klik vervolgens **Haal mijn gegevens op** om de meegeleverde cookie-extensie toestemming te geven de relevante gegevens uit die sessie over te nemen. Controleer de velden en bevestig het opslaan in MA.
 
 De extensie heeft alleen toegang tot de gekozen provider en een tijdelijke lokale verbinding binnen de container. Browserprofiel en extensieconfiguratie staan in RAM onder `/dev/shm`; na sluiten/verlopen worden die verwijderd. Het huidige browseradres wordt bijgewerkt zonder queryparameters. De extensie krijgt geen toegang tot de cookies van je telefoon of je andere browsers. SoundCloud Client ID wordt waargenomen in de eigen providerverzoeken; het OAuth-token komt uit de eigen sessiecookie.
 

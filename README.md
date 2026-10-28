@@ -17,14 +17,18 @@ Koppel Music Assistant-providers direct vanuit de **Home Assistant-app op je tel
 2. Voeg toe: `https://github.com/Kevin2296/music-assistant-connect-ha`
 3. Installeer **Music Assistant Connect** en start hem.
 4. Schakel **Weergeven in zijbalk** in; open **Music Connect** op je telefoon via de Home Assistant Companion-app.
-5. Vul vooraf bij **Configuratie** `ma_url` en `ma_token` in (intern Music Assistant-adres en MA-token met providerbeheerrechten), sla op en herstart. Het token blijft op de server. Handmatige invoer in de app blijft mogelijk.
-6. Stel optioneel `ma_ui_url` in op je HA Music Assistant-paneelpad of bestaand HTTPS MA-adres voor snelkoppelingen. Kies de provider en volg de wizard.
+5. Tik in de app op **Koppel met Music Assistant**. De app vindt de Music Assistant-app op dezelfde HA zelf (`http://172.30.32.1:8095`) en laat MA met jouw HA-login een eigen toegangssleutel aanmaken. Niets te kopiëren; de sleutel blijft op de server.
+6. Kies de provider en volg de wizard. Voor YouTube Music controleert de app of de **YT Music PO Token Generator** draait en brengt je anders met één tik naar die app.
+
+Draait Music Assistant ergens anders? Vul dan bij **Configuratie** `ma_url`, `ma_token` en eventueel `ma_ui_url` in, of gebruik **Handmatig verbinden** in de app.
 
 Ook buiten je wifi: open je bestaande **DuckDNS/HTTPS Home Assistant-toegang** en kies Music Connect in de zijbalk. Het interne MA-adres hoeft niet vanaf je telefoon bereikbaar te zijn. Geen extra portforwarding nodig. Zie de [handleiding](music_assistant_connect/DOCS.md) voor veilige navigatie en de grenzen van automatisch cookies koppelen.
 
 **Vereist:** Home Assistant OS met app-ondersteuning (`amd64`/`aarch64`) en een bereikbare Music Assistant-server. De ingebouwde browser vraagt relatief veel geheugen. Geen ondersteuning op Home Assistant Container.
 
 ## Status
+
+**v0.6.0 – experimenteel.** Nieuw: koppelen met Music Assistant in één tik en een statuscontrole voor de YT Music PO Token Generator; nog niet getest op een echte HAOS-installatie.
 
 **v0.5.0 – experimenteel.** De tijdelijke browser draait nu als een gewone Chromium-sessie met een meegeleverde cookie-extensie op de HA-server. Je bedient hem vanuit HA, inclusief slepen; er is geen extensie op je telefoon nodig. Een test met echte browser/extensie en kunstmatige cookies controleert de overdracht. Dit bewijst geen succesvolle Google/SoundCloud-aanmelding of CAPTCHA-afhandeling. Providers kunnen ook deze browser blokkeren. De Docker-build op jouw HAOS-installatie en echte provideraccounts zijn niet live gevalideerd. YouTube Music vereist nog steeds een passende PO Token Generator.
 

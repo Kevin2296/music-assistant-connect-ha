@@ -24,6 +24,7 @@ jobs:
       - run: python music_assistant_connect/tests/manual_browser_smoke.py
       - run: python music_assistant_connect/tests/browser_smoke.py
       - run: python music_assistant_connect/tests/ui_smoke.py
+      - run: python music_assistant_connect/tests/link_smoke.py
       - name: Check HA app metadata
         run: |
           python - <<'PY'

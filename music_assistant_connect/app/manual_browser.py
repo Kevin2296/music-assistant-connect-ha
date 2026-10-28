@@ -28,6 +28,25 @@ PROVIDERS = {'ytmusic':'https://music.youtube.com/',
              'soundcloud':'https://soundcloud.com/', 'deezer':'https://www.deezer.com/'}
 
 
+HINTS = {'authorization':'log in bij SoundCloud (Sign in, rechtsboven)',
+         'client_id':'speel een nummer af of zoek iets, zodat SoundCloud zijn Client ID laadt',
+         'cookie':'log in bij YouTube Music (Inloggen, rechtsboven) en open daarna Bibliotheek',
+         'arl':'log in bij Deezer'}
+LABELS = {'authorization':'OAuth-token','client_id':'Client ID','cookie':'aanmeldcookie','arl':'ARL'}
+
+
+def missing_message(provider, values):
+    """Tell the user which value is still missing and what to do; never echo values."""
+    allowed = {'ytmusic':('cookie',),'soundcloud':('authorization','client_id'),'deezer':('arl',)}[provider]
+    missing = [k for k in allowed if not values.get(k)]
+    if provider == 'ytmusic' and not missing and '__Secure-3PAPISID=' not in values.get('cookie',''):
+        missing = ['cookie']
+    if not missing:
+        return ''
+    return ('Nog niet gevonden: ' + ', '.join(LABELS[k] for k in missing) + '. Volgende stap: '
+            + '; '.join(HINTS[k] for k in missing) + '. Kies daarna opnieuw Haal mijn gegevens op.')
+
+
 class ManualBrowser:
     def __init__(self):
         self.process = None
@@ -215,9 +234,9 @@ class ManualBrowser:
             if not isinstance(values,dict):values={}
             allowed={'ytmusic':{'cookie'},'soundcloud':{'authorization','client_id'},'deezer':{'arl'}}[self.provider]
             values={k:v for k,v in values.items() if k in allowed and isinstance(v,str) and 0<len(v)<=60000}
-            complete=all(values.get(k) for k in allowed)
-            if self.provider=='ytmusic':complete=complete and '__Secure-3PAPISID=' in values.get('cookie','')
-            return {'found':complete,'values':values,'message':'Gegevens gevonden.' if complete else 'Nog niet alle gegevens gevonden. Log zelf in, open een eigen afspeellijst en probeer opnieuw. Bij een blokkade kan deze sessie niet automatisch worden gekoppeld.'}
+            missing=missing_message(self.provider,values)
+            if self.provider=='ytmusic' and missing:values={}
+            return {'found':not missing,'values':values,'message':missing or 'Gegevens gevonden.'}
 
     async def close(self):
         if self.pending and not self.pending.done():self.pending.cancel()

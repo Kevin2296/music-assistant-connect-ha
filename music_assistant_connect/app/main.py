@@ -17,9 +17,10 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from browser import ProviderBrowser, BrowserUnavailable
+import supervisor
 
 SUPERVISOR_IP = "172.30.32.2"
-VERSION = "0.5.1"
+VERSION = "0.6.0"
 browser = ProviderBrowser()
 SITE = Path(__file__).parent / "static"
 OPTIONS_FILE = Path("/data/options.json")
@@ -64,13 +65,30 @@ async def auth(request: Request):
     if not trusted_ingress(request):
         raise HTTPException(status_code=403, detail="Open de app via Home Assistant.")
 
+async def resolved_options() -> dict:
+    """Options with automatic defaults for the MA app on this HAOS host."""
+    config = dict(options())
+    music_assistant = await supervisor.find_music_assistant() if not (config.get("ma_url") and config.get("ma_ui_url")) else None
+    if not config.get("ma_url"):
+        config["ma_url"] = supervisor.DEFAULT_MA_URL
+    if not config.get("ma_ui_url"):
+        slug = music_assistant["slug"] if music_assistant else supervisor.MA_SLUGS[0]
+        config["ma_ui_url"] = "/hassio/ingress/" + slug
+    return config
+
 @app.get("/api/settings")
-async def settings(_: None = Depends(auth)):
-    config = options()
+async def settings(request: Request, _: None = Depends(auth)):
+    config = await resolved_options()
+    music_assistant = await supervisor.find_music_assistant()
+    ingress = music_assistant["ingress_url"] if music_assistant and music_assistant["state"] == "started" else ""
     return {
-        "configured": bool(config.get("ma_url") and config.get("ma_token")),
+        "configured": bool(config.get("ma_token")),
         "ma_url": config.get("ma_url", ""),
         "ma_ui_url": navigation_url(config.get("ma_ui_url", "")),
+        # Same-origin HA ingress path of MA; the phone's own HA login authorizes it.
+        "ma_ingress": ingress,
+        "ma_state": music_assistant["state"] if music_assistant else "",
+        "user_name": request.headers.get("x-remote-user-display-name", "")[:80],
     }
 
 @app.middleware("http")
@@ -138,13 +156,16 @@ def validate_ma_url(url: str) -> str:
 async def ma_api(body: MARequest, _: None = Depends(auth)):
     if body.command not in ALLOWED_COMMANDS:
         raise HTTPException(400, "Niet-toegestaan API-commando")
-    config = options()
-    configured = bool(config.get("ma_url") and config.get("ma_token"))
+    config = await resolved_options()
+    configured = bool(config.get("ma_token"))
     # A configured credential can only be sent to its configured target.
     url = config["ma_url"] if configured else body.url
     token = config["ma_token"] if configured else body.token
+    return await call_ma(url, token, body.command, body.args)
+
+async def call_ma(url: str, token: str, command: str, args: dict):
     if len(token) < 8:
-        raise HTTPException(400, "Stel het Music Assistant API-token in bij de appconfiguratie.")
+        raise HTTPException(400, "Koppel eerst met Music Assistant via stap 1.")
     try:
         target = validate_ma_url(url)
     except ValueError as exc:
@@ -152,7 +173,7 @@ async def ma_api(body: MARequest, _: None = Depends(auth)):
     try:
         async with httpx.AsyncClient(timeout=130, follow_redirects=False, trust_env=False) as client:
             response = await client.post(
-                target + "/api", json={"message_id": secrets.token_hex(8), "command": body.command, "args": body.args},
+                target + "/api", json={"message_id": secrets.token_hex(8), "command": command, "args": args},
                 headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
             )
         if response.status_code == 401:
@@ -174,6 +195,27 @@ async def ma_api(body: MARequest, _: None = Depends(auth)):
     except (httpx.HTTPError, ValueError) as exc:
         # HTTP errors can contain requested URL, but not the access token.
         raise HTTPException(502, "Geen geldige verbinding met Music Assistant. Controleer het adres, token en de lokale netwerktoegang.") from exc
+
+class LinkInput(BaseModel):
+    token: str = Field(min_length=8, max_length=8192)
+
+@app.post("/api/link")
+async def link(body: LinkInput, _: None = Depends(auth)):
+    """Verify a token the user just created in MA, then keep it server-side."""
+    global APP_OPTIONS
+    config = await resolved_options()
+    token = body.token.strip()
+    # Fails with MA's own message when the token lacks provider-management rights.
+    await call_ma(config["ma_url"], token, "config/providers", {})
+    stored = {**options(), "ma_url": config["ma_url"], "ma_ui_url": config["ma_ui_url"], "ma_token": token}
+    saved = await supervisor.save_own_options(stored)
+    # Keep it usable now even if Supervisor refused; never echo it back.
+    APP_OPTIONS = stored
+    return {"ok": True, "saved": saved}
+
+@app.get("/api/ytmusic/status")
+async def ytmusic_status(_: None = Depends(auth)):
+    return await supervisor.po_token_status()
 
 class ProviderInput(BaseModel):
     provider: str

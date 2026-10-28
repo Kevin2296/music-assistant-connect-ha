@@ -1,3 +1,12 @@
+# 0.6.0 (experimental)
+
+- Default `ma_url` to `http://172.30.32.1:8095` (MA app on the host network) and derive `ma_ui_url` from the installed MA app via Supervisor (`hassio_api`, default role, read-only app info). Configured values still win.
+- Add one-tap "Koppel met Music Assistant": the page asks MA for a long-lived token through MA's own HA ingress with the signed-in HA user (`auth/token/create`), the server verifies it and stores it via Supervisor (`/addons/self/options`). The token is never returned to the page or logged. Manual connection stays available under "Handmatig verbinden".
+- YouTube Music: check whether the YT Music PO Token Generator app is installed and answers on port 4416, with a direct link to install/start it. Prefill an empty username. Explain plainly when Google refuses sign-in in the server browser; no workaround is attempted.
+- SoundCloud/Deezer/YouTube Music: name the exact missing value and the next step after a partial capture; jump to "Opslaan en koppelen" after a full capture. Rename the browser button to "Inloggen bij <dienst>".
+- Remove the Supervisor token from the process environment at startup so Chromium and Xvfb do not inherit it.
+- Add tests for linking, Supervisor lookups, token storage, PO token status and hints, plus a browser smoke test of the one-tap flow. Not yet validated on a real HAOS installation.
+
 # 0.5.1
 
 - Remove synchronous pointer-movement waits from manual browser controls; clicks and wheel events no longer depend on a fresh movement notification. Test repeated clicks at the same coordinates against real Chromium.
