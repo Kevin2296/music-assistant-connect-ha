@@ -174,7 +174,7 @@ async function flushKeys(){
   }catch(e){typing.queue=[];message($('#wizard-status'),errorMessage(e),'error')}
   finally{typing.busy=false}
 }
-function keepKeyboard(){if(Date.now()-typing.lastFocus<60000)$('#browser-input').focus({preventScroll:true})}
+function keepKeyboard(){$('#browser-input').focus({preventScroll:true})}
 (()=>{
   const field=$('#browser-input');
   field.addEventListener('focus',()=>{typing.lastFocus=Date.now()});

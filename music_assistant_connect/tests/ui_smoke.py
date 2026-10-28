@@ -78,6 +78,12 @@ with sync_playwright() as p:
         page.mouse.move(box['x']+100,box['y']+30,steps=5)
         page.mouse.up()
     assert drag_request.value.post_data_json['end_x']>drag_request.value.post_data_json['x']
+    # A single tap in the image opens the keyboard field straight away.
+    page.locator('#browser-input').evaluate('e=>e.blur()')
+    box=page.locator('#browser-image').bounding_box()
+    with page.expect_request('**/api/browser/click'):
+        page.mouse.click(box['x']+40,box['y']+40)
+    assert page.evaluate('document.activeElement.id')=='browser-input'
     # Live keyboard: characters, Backspace on an empty field and Enter reach the browser in order.
     field=page.locator('#browser-input')
     field.click()

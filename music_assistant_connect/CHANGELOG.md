@@ -1,3 +1,7 @@
+# 0.6.3
+
+- One tap on a field in the browser image now also opens the phone keyboard; no separate tap on the typing field. The typing row sits directly under the browser image.
+
 # 0.6.2
 
 - Live keyboard for the temporary browser: each character goes straight to the page, in order. Backspace on an empty field and Enter/Tab are forwarded; the separate "Typ" button is gone. After tapping in the image while typing, the phone keyboard stays open.
