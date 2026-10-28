@@ -76,7 +76,7 @@ let pointerStart=null;
 const browserImage=$('#browser-image');browserImage.draggable=false;browserImage.style.touchAction='none';
 function browserPoint(event){const box=browserImage.getBoundingClientRect();return {x:Math.max(0,Math.min(state.browserViewport.width-1,(event.clientX-box.left)/box.width*state.browserViewport.width)),y:Math.max(0,Math.min(state.browserViewport.height-1,(event.clientY-box.top)/box.height*state.browserViewport.height))}}
 browserImage.addEventListener('pointerdown',event=>{if(!state.activeBrowser||!event.isPrimary)return;event.preventDefault();pointerStart=browserPoint(event);browserImage.setPointerCapture(event.pointerId)});
-browserImage.addEventListener('pointerup',async event=>{if(!pointerStart)return;const start=pointerStart;pointerStart=null;const end=browserPoint(event);if(Math.hypot(end.x-start.x,end.y-start.y)>6)await browserAction('drag',{...start,end_x:end.x,end_y:end.y});else await browserAction('click',start)});
+browserImage.addEventListener('pointerup',async event=>{if(!pointerStart)return;keepKeyboard();const start=pointerStart;pointerStart=null;const end=browserPoint(event);if(Math.hypot(end.x-start.x,end.y-start.y)>6)await browserAction('drag',{...start,end_x:end.x,end_y:end.y});else await browserAction('click',start)});
 browserImage.addEventListener('pointercancel',()=>{pointerStart=null});
 $('#browser-reload').addEventListener('click',()=>browserAction('reload'));$('#browser-end').addEventListener('click',endBrowser);
 $('#browser-scroll-up').addEventListener('click',()=>browserAction('scroll',{delta_y:-550,x:state.browserViewport.width/2,y:state.browserViewport.height/2}));
@@ -92,7 +92,7 @@ $('#browser-image').addEventListener('wheel',e=>{
   if(!wheelBusy)flushWheel();
 },{passive:false});
 async function flushWheel(){wheelBusy=true;const generation=browserGeneration;try{while(wheelPending&&state.activeBrowser&&generation===browserGeneration){const body=wheelPending;wheelPending=null;await browserAction('scroll',body)}}finally{wheelPending=null;wheelBusy=false}}
-$('#browser-reveal').addEventListener('click',()=>{const input=$('#browser-input');input.type=input.type==='password'?'text':'password'});$('#browser-type').addEventListener('click',async()=>{const field=$('#browser-input');const value=field.value;field.value='';await browserAction('type',{value})});$('#browser-input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#browser-type').click()}});$('#browser-enter').addEventListener('click',()=>browserAction('key',{value:'Enter'}));$('#browser-tab').addEventListener('click',()=>browserAction('key',{value:'Tab'}));$('#browser-extract').addEventListener('click',extractBrowser);
+$('#browser-reveal').addEventListener('click',()=>{const input=$('#browser-input');input.type=input.type==='password'?'text':'password'});$('#browser-backspace').addEventListener('click',()=>queueKeys({key:'Backspace'}));$('#browser-enter').addEventListener('click',()=>queueKeys({key:'Enter'}));$('#browser-tab').addEventListener('click',()=>queueKeys({key:'Tab'}));$('#browser-extract').addEventListener('click',extractBrowser);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll()});
 try{sessionStorage.removeItem('ma-token');sessionStorage.removeItem('ma-url')}catch{}
 loadSettings();
@@ -157,6 +157,35 @@ function renderProviderCheck(){
 async function checkPoToken(){try{const r=await fetch('api/ytmusic/status',{cache:'no-store'});if(r.ok)state.poToken=await r.json()}catch{}renderProviderCheck()}
 function showBlockNotice(address){const text=CredentialHelpers.blocked(state.provider?.id,address);if(text&&text!==state.blockNotice)message($('#wizard-status'),text,'error');state.blockNotice=text}
 function highlightSubmit(){const submit=$('#flow-submit');if(!submit)return;submit.classList.add('attention');submit.scrollIntoView({behavior:'smooth',block:'center'});submit.focus({preventScroll:true})}
+// Live keyboard: every character goes straight to the temporary browser, in order.
+const typing={queue:[],busy:false,lastFocus:0};
+function queueKeys(item){typing.queue.push(item);flushKeys()}
+async function flushKeys(){
+  if(typing.busy)return;typing.busy=true;
+  try{
+    while(typing.queue.length&&state.activeBrowser){
+      const item=typing.queue.shift();
+      if(item.key){await post('api/browser/key',{value:item.key});continue}
+      // Merge queued text so fast typing needs few requests.
+      let text=item.text;while(typing.queue[0]?.text!==undefined&&text.length<900)text+=typing.queue.shift().text;
+      await post('api/browser/type',{value:text});
+    }
+    shot();
+  }catch(e){typing.queue=[];message($('#wizard-status'),errorMessage(e),'error')}
+  finally{typing.busy=false}
+}
+function keepKeyboard(){if(Date.now()-typing.lastFocus<60000)$('#browser-input').focus({preventScroll:true})}
+(()=>{
+  const field=$('#browser-input');
+  field.addEventListener('focus',()=>{typing.lastFocus=Date.now()});
+  field.addEventListener('beforeinput',e=>{
+    // An empty field still has to delete in the remote page.
+    if(e.inputType==='deleteContentBackward'&&!field.value){e.preventDefault();queueKeys({key:'Backspace'})}
+    if(e.inputType==='insertLineBreak'){e.preventDefault();queueKeys({key:'Enter'})}
+  });
+  field.addEventListener('input',()=>{typing.lastFocus=Date.now();const text=field.value;field.value='';if(text)queueKeys({text})});
+  field.addEventListener('keydown',e=>{typing.lastFocus=Date.now();if(e.key==='Enter'){e.preventDefault();queueKeys({key:'Enter'})}else if(e.key==='Backspace'&&!field.value){e.preventDefault();queueKeys({key:'Backspace'})}else if(e.key==='Tab'){e.preventDefault();queueKeys({key:'Tab'})}});
+})();
 function addPasteButtons(container){
   for(const input of container.querySelectorAll('input[type="password"]')){
     if(input.readOnly)continue;

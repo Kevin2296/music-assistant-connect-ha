@@ -1,3 +1,8 @@
+# 0.6.2
+
+- Live keyboard for the temporary browser: each character goes straight to the page, in order. Backspace on an empty field and Enter/Tab are forwarded; the separate "Typ" button is gone. After tapping in the image while typing, the phone keyboard stays open.
+- Explain Google's passkey/security-key screen (it cannot use the phone's passkey): tap Cancel, then "Try another way" and choose password or a phone prompt.
+
 # 0.6.1
 
 - Open the YT Music PO Token Generator at its current Home Assistant path `/config/app/<slug>/info` instead of the old `/hassio/addon/...` path, with `?store=true` while it is not installed so the Install button shows.

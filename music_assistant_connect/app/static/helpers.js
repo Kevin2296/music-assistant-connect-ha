@@ -34,6 +34,9 @@ const CredentialHelpers = {
     if (provider === 'ytmusic' && url.hostname === 'accounts.google.com' && /\/rejected\b/.test(url.pathname)) {
       return 'Google weigert inloggen in deze serverbrowser. Dit is een beveiliging van Google; deze app omzeilt die niet. Probeer het later nog eens, of koppel YouTube Music eenmalig volgens de handleiding op een computer. Zonder computer: kies een dienst met officiële koppeling, zoals Spotify of Tidal.';
     }
+    if (url.hostname === 'accounts.google.com' && /\/challenge\/(pk|sk|securitykey)\b/.test(url.pathname)) {
+      return 'Google vraagt om je passkey of beveiligingssleutel. Die staat op je telefoon en werkt niet in deze serverbrowser. Tik in het beeld op Cancel, dan op Try another way, en kies je wachtwoord of een melding op je telefoon.';
+    }
     if (url.hostname.endsWith('captcha-delivery.com') || /\/captcha\b/i.test(url.pathname)) {
       return 'De dienst vraagt een extra controle. Voltooi die zelf in het beeld; deze app lost geen controles voor je op.';
     }

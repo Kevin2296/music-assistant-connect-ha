@@ -20,7 +20,7 @@ from browser import ProviderBrowser, BrowserUnavailable
 import supervisor
 
 SUPERVISOR_IP = "172.30.32.2"
-VERSION = "0.6.1"
+VERSION = "0.6.2"
 browser = ProviderBrowser()
 SITE = Path(__file__).parent / "static"
 OPTIONS_FILE = Path("/data/options.json")

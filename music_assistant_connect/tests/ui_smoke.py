@@ -12,6 +12,7 @@ with sync_playwright() as p:
     page=browser.new_page(viewport={'width':390,'height':844})
     errors=[]
     scrolls=[]
+    typed=[]
     page.on('pageerror',lambda error:errors.append(str(error)))
     prefix='/api/hassio_ingress/test-session/'
     def serve(route):
@@ -32,6 +33,9 @@ with sync_playwright() as p:
         elif path=='api/browser/start':route.fulfill(json={'ready':True,'page':'https://consent.youtube.com/','viewport':{'width':980,'height':720}})
         elif path=='api/browser/scroll':
             scrolls.append(route.request.post_data_json)
+            route.fulfill(json={'ok':True})
+        elif path in ('api/browser/type','api/browser/key'):
+            typed.append((path,route.request.post_data_json['value']))
             route.fulfill(json={'ok':True})
         elif path in ('api/browser/drag','api/browser/click','api/browser/home'):route.fulfill(json={'ok':True})
         elif path=='api/browser/screenshot':route.fulfill(body='<svg xmlns="http://www.w3.org/2000/svg" width="980" height="720"><text x="10" y="30">Consent page</text></svg>',content_type='image/svg+xml')
@@ -74,6 +78,17 @@ with sync_playwright() as p:
         page.mouse.move(box['x']+100,box['y']+30,steps=5)
         page.mouse.up()
     assert drag_request.value.post_data_json['end_x']>drag_request.value.post_data_json['x']
+    # Live keyboard: characters, Backspace on an empty field and Enter reach the browser in order.
+    field=page.locator('#browser-input')
+    field.click()
+    field.press_sequentially('ab',delay=50)
+    field.press('Backspace')
+    field.press('Enter')
+    page.wait_for_function('document.querySelector("#browser-input").value===""')
+    page.wait_for_timeout(500)
+    assert ''.join(v for p,v in typed if p=='api/browser/type')=='ab',typed
+    assert [v for p,v in typed if p=='api/browser/key']==['Backspace','Enter'],typed
+    assert page.get_by_role('button',name='Typ',exact=True).count()==0
     with page.expect_request('**/api/browser/home'):
         page.get_by_role('button',name='Terug naar muziekdienst').click()
     page.locator('#browser-end').click()

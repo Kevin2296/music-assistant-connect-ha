@@ -29,4 +29,6 @@ test('provider refusals are recognised for a plain explanation',()=>{
   assert.equal(h.blocked('ytmusic','https://accounts.google.com/v3/signin/identifier'),'');
   assert.equal(h.blocked('ytmusic','not a url'),'');
   assert.match(h.blocked('soundcloud','https://geo.captcha-delivery.com/captcha/'),/zelf/);
+  assert.match(h.blocked('ytmusic','https://accounts.google.com/v3/signin/challenge/pk'),/Try another way/);
+  assert.equal(h.blocked('ytmusic','https://accounts.google.com/v3/signin/challenge/pwd'),'');
 });
