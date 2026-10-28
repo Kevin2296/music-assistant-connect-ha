@@ -1,3 +1,7 @@
+# 0.6.1
+
+- Open the YT Music PO Token Generator at its current Home Assistant path `/config/app/<slug>/info` instead of the old `/hassio/addon/...` path, with `?store=true` while it is not installed so the Install button shows.
+
 # 0.6.0 (experimental)
 
 - Default `ma_url` to `http://172.30.32.1:8095` (MA app on the host network) and derive `ma_ui_url` from the installed MA app via Supervisor (`hassio_api`, default role, read-only app info). Configured values still win.

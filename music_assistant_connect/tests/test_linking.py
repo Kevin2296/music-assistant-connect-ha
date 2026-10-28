@@ -168,7 +168,7 @@ async def test_po_token_status(monkeypatch):
     fake_supervisor(monkeypatch, handler)
     status = await supervisor.po_token_status()
     assert status['installed'] and status['reachable'] and status['state'] == 'started'
-    assert status['app_path'] == '/hassio/addon/d5369777_ytm_po_token_generator/info'
+    assert status['app_path'] == '/config/app/d5369777_ytm_po_token_generator/info'
     assert status['server_url'] == 'http://127.0.0.1:4416'
 
     def down(request):
@@ -178,6 +178,7 @@ async def test_po_token_status(monkeypatch):
     fake_supervisor(monkeypatch, down)
     status = await supervisor.po_token_status()
     assert not status['installed'] and not status['reachable']
+    assert status['app_path'] == '/config/app/d5369777_ytm_po_token_generator/info?store=true'
 
 
 @pytest.mark.asyncio

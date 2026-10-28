@@ -94,11 +94,13 @@ async def po_token_status() -> dict:
             reachable = (await client.get(PO_TOKEN_PING_URL)).status_code == 200
     except httpx.HTTPError:
         pass
+    installed = bool(info and info.get("version"))
     return {
         "known": available(),
-        "installed": bool(info and info.get("version")),
+        "installed": installed,
         "state": (info or {}).get("state", ""),
         "reachable": reachable,
-        "app_path": f"/hassio/addon/{PO_TOKEN_SLUG}/info",
+        # Not installed yet: HA's store page for this app shows the Install button.
+        "app_path": f"/config/app/{PO_TOKEN_SLUG}/info" + ("" if installed else "?store=true"),
         "server_url": "http://127.0.0.1:4416",
     }
